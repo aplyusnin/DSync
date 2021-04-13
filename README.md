@@ -38,8 +38,8 @@
 
 ## User commits new version
 1. User selects file(-s) 
-2. Client sends hash-key of file(-s), hash of version and hash of file(-s) to server
-3. Server duplicates version with given version and updates dependencies
+2. Client sends hash-key and version of file(-s) to server
+3. Server duplicates version, assigns to it new version identifier and updates dependencies
 4. Server response with result
 5. If creation succed client uploads new version
 
@@ -51,5 +51,5 @@
 # Features
 - Server stores files as is 
 - Dependency-lists are stored for each file independently
-- Client and server communicates via web-sockets
+- Client and server communicates via http
 - For each user server stores accessibility list and symlinks to editable files
