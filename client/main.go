@@ -130,7 +130,7 @@ func main() {
 				select {
 				case event := <-watcher.Events:
 					fmt.Printf("EVENT: %#v\n", event)
-					//SendFile(event.Name)
+					SendFile(event.Name, folder.RemotePath)
 
 				case err := <-watcher.Errors:
 					fmt.Println("ERROR", err)
