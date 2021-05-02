@@ -5,6 +5,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import ru.nsu.fit.dsync.server.servlets.VersionControlServlet;
+import ru.nsu.fit.dsync.server.servlets.VersionDownloadServlet;
 
 public class Main {
 
@@ -15,6 +16,7 @@ public class Main {
 		ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
 		handler.addServlet(VersionControlServlet.class, "/INFO");
+		handler.addServlet(VersionDownloadServlet.class, "/DOWNLOAD");
 
 		HandlerList handlers = new HandlerList();
 		handlers.setHandlers(new Handler[] { handler });

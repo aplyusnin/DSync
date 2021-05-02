@@ -7,6 +7,7 @@ import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.PrintStream;
 import java.util.concurrent.Semaphore;
 
@@ -87,5 +88,17 @@ public class DirHandler {
 			throw new InvalidRequestDataException("File doesn't exits");
 		}
 	}
+
+	public File findFile(String filename, String version) throws Exception{
+		try {
+			File[] files = new File(file.getPath() + "/" + filename + "/" + version).listFiles();
+			if (files.length != 1) throw new Exception("Invalid storage state: " + file.getPath() + "/" + filename + "/" + version);
+			return files[0];
+		}
+		catch (Exception e){
+			throw new InvalidRequestDataException("Version of file doesn't exists");
+		}
+	}
+
 
 }
