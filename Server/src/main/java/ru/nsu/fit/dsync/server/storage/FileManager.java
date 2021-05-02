@@ -3,7 +3,6 @@ package ru.nsu.fit.dsync.server.storage;
 import ru.nsu.fit.dsync.utils.Misc;
 
 import java.io.*;
-import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.zip.ZipOutputStream;
 

@@ -1,13 +1,9 @@
 import org.junit.Assert;
 import org.junit.Test;
-import ru.nsu.fit.dsync.server.storage.DirHandler;
-import ru.nsu.fit.dsync.server.storage.FileInfo;
-import ru.nsu.fit.dsync.server.storage.FileManager;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
 
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.HashSet;
 
 

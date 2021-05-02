@@ -2,12 +2,14 @@ package ru.nsu.fit.dsync.server.storage;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 import ru.nsu.fit.dsync.utils.Misc;
 
 /**
@@ -30,19 +32,24 @@ public class UserMetaData {
 
 
 	public File findUser(String user) throws Exception {
-		return new File("Users/" + user);
+		File f =  new File("Users/" + user);
+
+		if (!f.exists() || !f.isDirectory()) throw new InvalidRequestDataException("User doesn't exists");
+
+		return f;
  	}
 
- 	public String getUserPasswordHash(String user) throws Exception {
-		File f = findUser(user);
+ 	public byte[] getUserPasswordHash(String user) throws Exception {
+	    File f = findUser(user);
+		File passwordHashFile = new File(f.getPath() + "/password.bin");
 
-		File passwordHashFile = new File(f.getPath() + "/password.txt");
-
-
-		//byte[] hash = passwordHashFile.read
-		Scanner sc = new Scanner(new FileInputStream(passwordHashFile));
-
-		return sc.next();
+		byte[] hash = new byte[1024];
+		int cnt = 0;
+		if ((cnt = new FileInputStream(passwordHashFile).read(hash, 0, 1024)) != 32)
+		{
+			throw new Exception("Invalid hash length");
+		}
+		return hash;
     }
 
 
@@ -65,11 +72,17 @@ public class UserMetaData {
     }
 
     public void validateUserData(String user, String password) throws Exception {
-	    String hashServer = getUserPasswordHash(user);
-		String hashClient = Misc.bytesToHex(Misc.getSHA256Hash(password));
+	    byte[] hashServer = getUserPasswordHash(user);
+	    byte[] hashClient = Misc.getSHA256Hash(password);
 
-		if (!hashServer.equals(hashClient)){}
-			//throw  new Exception("Invalid password");
+
+//	    File passwordHashFile = new File("Users/" + user + "/password.bin");
+//	    FileOutputStream out = new FileOutputStream(passwordHashFile);
+//	    out.write(hashClient, 0, 32);
+	    for (int i = 0; i < 32; i++) {
+			if (hashServer[i] != hashClient[i])
+		        throw new InvalidRequestDataException("Incorrect password");
+	    }
     }
 
 

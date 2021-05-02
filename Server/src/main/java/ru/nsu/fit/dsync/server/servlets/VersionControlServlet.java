@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import ru.nsu.fit.dsync.server.storage.DirHandler;
 import ru.nsu.fit.dsync.server.storage.FileManager;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
+import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
 import java.io.IOException;
 
@@ -30,10 +31,16 @@ public class VersionControlServlet extends HttpServlet {
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"version\" : \"" + version + "\"}");
 		}
-		catch (Exception e){
+		catch (InvalidRequestDataException e)
+		{
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println(e.getMessage());
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
+		}
+		catch(Exception e){
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"server error\"}");
 		}
 	}
 

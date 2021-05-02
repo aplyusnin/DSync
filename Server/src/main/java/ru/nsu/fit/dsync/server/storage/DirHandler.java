@@ -3,6 +3,7 @@ package ru.nsu.fit.dsync.server.storage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +32,7 @@ public class DirHandler {
 	 */
 	public DirHandler(String filename) throws Exception{
 		this.file = new File(filename);
-		if (!this.file.isDirectory()) throw new Exception("Invalid dir name");
+		if (!this.file.isDirectory()) throw new InvalidRequestDataException("Repository doesn't exist");
 		this.versions= new File(filename + "/versions.json");
 		this.name = filename;
 		this.root = objectMapper.readValue(versions, ObjectNode.class);
@@ -77,8 +78,14 @@ public class DirHandler {
 	}
 
 
-	public String getLastVersion(String filename) {
-		return root.get(filename).asText();
+	public String getLastVersion(String filename) throws Exception {
+		try
+		{
+			return root.get(filename).asText();
+		}
+		catch (Exception e){
+			throw new InvalidRequestDataException("File doesn't exits");
+		}
 	}
 
 }
