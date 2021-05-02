@@ -22,7 +22,7 @@ public class FileManagerTest {
 			String name = shared.iterator().next();
 			File file = new File("src/test/resources/Users/" + name);
 
-			System.out.println(FileManager.getInstance().sha256Hash(new FileInputStream(file)));
+			//System.out.println(FileManager.getInstance().sha256Hash(new FileInputStream(file)));
 
 		}
 		catch (Exception e)
@@ -33,7 +33,7 @@ public class FileManagerTest {
 
 	@Test
 	public void copyTest() {
-		try {
+		/*try {
 			DirHandler handler = FileManager.getInstance().getHandler("src/test/resources/Users/Alex/Files/Lab1_Source/");
 			File root = handler.getFile();
 			File file1 = new File("src/test/resources/Users/Alex/Files/Lab1_Source/data/source.cpp/v2/source.cpp");
@@ -43,8 +43,6 @@ public class FileManagerTest {
 		}
 		catch (Exception e){
 			Assert.fail();
-		}
+		}*/
 	}
-
-
 }

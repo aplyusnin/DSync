@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import ru.nsu.fit.dsync.utils.Misc;
 
 /**
  * Class for storing information about users
@@ -28,21 +30,19 @@ public class UserMetaData {
 
 
 	public File findUser(String user) throws Exception {
-		File rootf = new File(UserMetaData.class.getResource(root).toURI());
-		return new File(rootf.getPath() + "/" + user);
+		return new File("Users/" + user);
  	}
 
- 	public byte[] getUserPasswordHash(String user) throws Exception {
+ 	public String getUserPasswordHash(String user) throws Exception {
 		File f = findUser(user);
 
-		File passwordHashFile = new File(f.getPath() + "/password.bin");
+		File passwordHashFile = new File(f.getPath() + "/password.txt");
 
-		byte[] hash = new byte[32];
 
-		if (new FileInputStream(passwordHashFile).read(hash, 0, 32) != 32){
-			throw new Exception("User's password hash is broken");
-		}
-		return hash;
+		//byte[] hash = passwordHashFile.read
+		Scanner sc = new Scanner(new FileInputStream(passwordHashFile));
+
+		return sc.next();
     }
 
 
@@ -63,5 +63,14 @@ public class UserMetaData {
         availableFiles.put(user, shared);
 	    return shared;
     }
+
+    public void validateUserData(String user, String password) throws Exception {
+	    String hashServer = getUserPasswordHash(user);
+		String hashClient = Misc.bytesToHex(Misc.getSHA256Hash(password));
+
+		if (!hashServer.equals(hashClient)){}
+			//throw  new Exception("Invalid password");
+    }
+
 
 }

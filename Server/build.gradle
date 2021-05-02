@@ -18,7 +18,9 @@ dependencies {
             [group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.4.1'],
             [group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.1']
     )
+    // https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-server
+    implementation group: 'org.eclipse.jetty', name: 'jetty-server', version: '11.0.2'
+    // https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-servlet
+    implementation group: 'org.eclipse.jetty', name: 'jetty-servlet', version: '11.0.2'
+
 }
-
-
-mainClassName = 'ru.nsu.fit.dsync.server.HttpServer'

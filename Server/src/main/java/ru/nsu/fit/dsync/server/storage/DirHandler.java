@@ -76,4 +76,9 @@ public class DirHandler {
 		changes ++;
 	}
 
+
+	public String getLastVersion(String filename) {
+		return root.get(filename).asText();
+	}
+
 }
