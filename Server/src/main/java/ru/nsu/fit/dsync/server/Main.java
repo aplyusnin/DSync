@@ -20,7 +20,7 @@ public class Main {
 		handler.addServlet(VersionControlServlet.class, "/INFO");
 		handler.addServlet(VersionDownloadServlet.class, "/DOWNLOAD");
 		handler.addServlet(VersionUploadServlet.class, "/UPLOAD").getRegistration()
-				.setMultipartConfig(new MultipartConfigElement("/Temp", 1024 * 1024 * 5, 1024 * 1024 * 5 * 5, 1024 * 1024));
+				.setMultipartConfig(new MultipartConfigElement("./Temp.dat", 1024 * 1024 * 5, 1024 * 1024 * 5 * 5, 1024 * 1024));
 
 		HandlerList handlers = new HandlerList();
 		handlers.setHandlers(new Handler[] { handler });
