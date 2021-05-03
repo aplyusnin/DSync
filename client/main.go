@@ -40,9 +40,9 @@ func main() {
 
 	m := getFoldersMap(os.Args[1:])
 
-	fmt.Println(m)
+	//fmt.Println(m)
 
-	fmt.Println(hex.EncodeToString(Hash(os.Getenv("HOME") + "/file")))
+	//fmt.Println(hex.EncodeToString(Hash(os.Getenv("HOME") + "/file")))
 	//	println(string(Marshal()))
 
 	structure := getStructure()
@@ -89,7 +89,7 @@ func main() {
 				panic("Cannot open directory: " + k)
 			}
 			for _, file := range files {
-				println(file.Name())
+				//println(file.Name())
 				if file.IsDir() {
 					// nested directory, todo make a function for that
 				} else {
