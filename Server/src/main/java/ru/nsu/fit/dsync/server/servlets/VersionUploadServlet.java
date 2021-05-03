@@ -1,10 +1,12 @@
 package ru.nsu.fit.dsync.server.servlets;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import ru.nsu.fit.dsync.server.storage.DirHandler;
 import ru.nsu.fit.dsync.server.storage.FileManager;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
@@ -12,15 +14,26 @@ import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
 import java.io.*;
 
-@WebServlet("/FileDownloader")
-public class VersionDownloadServlet extends HttpServlet {
+@WebServlet("/FileUploader")
+@MultipartConfig(fileSizeThreshold = 1024 * 1024,
+		maxFileSize = 1024 * 1024 * 5,
+		maxRequestSize = 1024 * 1024 * 5 * 5)
+public class VersionUploadServlet extends HttpServlet {
 
-	private final int SIZE = 1024;
+	private String getFileName(Part part) {
+		for (String content : part.getHeader("content-disposition").split(";")) {
+			if (content.trim().startsWith("filename"))
+				return content.substring(content.indexOf("=") + 2, content.length() - 1);
+		}
+		return "tempName.dat";
+	}
+
 
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		String login = req.getParameter("login");
 		String password = req.getParameter("password");
+
 		try {
 			UserMetaData.getInstance().validateUserData(login, password);
 		}
@@ -36,12 +49,14 @@ public class VersionDownloadServlet extends HttpServlet {
 			resp.getWriter().println("{ \"error\": \"server error\"}");
 			return;
 		}
+
 		String repository = req.getParameter("repo");
-		String filename =  req.getParameter("filename");
-		String version = req.getParameter("version");
+		String filename = req.getParameter("filename");
+
 		DirHandler handler;
-		try {
-			handler = FileManager.getInstance().getHandler(login, repository);
+
+		try{
+			handler =  FileManager.getInstance().getHandler(login, repository);
 		}
 		catch (InvalidRequestDataException e) {
 			resp.setContentType("application/json");
@@ -55,11 +70,25 @@ public class VersionDownloadServlet extends HttpServlet {
 			resp.getWriter().println("{ \"error\": \"server error\"}");
 			return;
 		}
-		resp.setContentType("text/plain");
-		resp.setStatus(HttpServletResponse.SC_OK);
-		File response;
-		try {
-			response = handler.findFile(filename, version);
+
+		File temp;
+		Part p = req.getParts().iterator().next();
+		try
+		{
+			temp = handler.getTemp();
+
+			InputStream input = p.getInputStream();
+			OutputStream output = new FileOutputStream(temp);
+
+			byte[] buffer = new byte[1024];
+			int read = 0;
+
+			while ((read = input.read(buffer)) > 0)
+			{
+				output.write(buffer, 0, read);
+			}
+
+			output.close();
 		}
 		catch (InvalidRequestDataException e) {
 			resp.setContentType("application/json");
@@ -76,17 +105,19 @@ public class VersionDownloadServlet extends HttpServlet {
 			return;
 		}
 
-		InputStream input = new FileInputStream(response);
-		OutputStream out = resp.getOutputStream();
-
-		int len = 0;
-		byte[] buf = new byte[SIZE];
-		while ((len = input.read(buf)) > 0) {
-			out.write(buf, 0, len);
+		try {
+			String hash = FileManager.getInstance().createVersion(temp, login, repository, filename, getFileName(p));
+			handler.rewriteVersionEntry(filename, hash);
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"version\": \"" + hash + "\"}");
 		}
-
+		catch (Exception e) {
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"server error\"}");
+		}
 		handler.releaseHandler();
-
 	}
 
 }

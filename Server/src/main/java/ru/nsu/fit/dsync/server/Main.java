@@ -6,6 +6,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import ru.nsu.fit.dsync.server.servlets.VersionControlServlet;
 import ru.nsu.fit.dsync.server.servlets.VersionDownloadServlet;
+import ru.nsu.fit.dsync.server.servlets.VersionUploadServlet;
 
 public class Main {
 
@@ -17,6 +18,7 @@ public class Main {
 
 		handler.addServlet(VersionControlServlet.class, "/INFO");
 		handler.addServlet(VersionDownloadServlet.class, "/DOWNLOAD");
+		handler.addServlet(VersionUploadServlet.class, "/UPLOAD");
 
 		HandlerList handlers = new HandlerList();
 		handlers.setHandlers(new Handler[] { handler });

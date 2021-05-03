@@ -18,21 +18,53 @@ public class VersionControlServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		try {
-			String login = req.getParameter("login");
-			String password = req.getParameter("password");;
-			UserMetaData.getInstance().validateUserData(login, password);
-			String repository = req.getParameter("repo");
-			String filename =  req.getParameter("filename");
-			DirHandler handler = FileManager.getInstance().getHandler(login, repository);
 
+		String login = req.getParameter("login");
+		String password = req.getParameter("password");
+		try {
+			UserMetaData.getInstance().validateUserData(login, password);
+		}
+		catch (InvalidRequestDataException e)
+		{
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
+			return;
+		}
+		catch(Exception e){
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"server error\"}");
+			return;
+		}
+
+		String repository = req.getParameter("repo");
+		String filename =  req.getParameter("filename");
+		DirHandler handler;
+		try {
+			handler = FileManager.getInstance().getHandler(login, repository);
+		}
+		catch (InvalidRequestDataException e)
+		{
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
+			return;
+		}
+		catch(Exception e){
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"server error\"}");
+			return;
+		}
+
+		try {
 			String version = handler.getLastVersion(filename);
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"version\" : \"" + version + "\"}");
 		}
-		catch (InvalidRequestDataException e)
-		{
+		catch (InvalidRequestDataException e) {
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
@@ -42,6 +74,7 @@ public class VersionControlServlet extends HttpServlet {
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"error\": \"server error\"}");
 		}
+		handler.releaseHandler();
 	}
 
 }

@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.concurrent.Semaphore;
 
 
@@ -45,15 +42,15 @@ public class DirHandler {
 	 * @return - root of commit
 	 * @throws Exception unable to get commit
 	 */
-	public File getFile() throws Exception{
+	public DirHandler getHandler() throws Exception{
 		awaiting.acquire(1);
-		return file;
+		return this;
 	}
 
 	/**
 	 * Frees file for other threads
 	 */
-	public void releaseFile() {
+	public void releaseHandler() {
 		try {
 			if (changes > 0) {
 				changes = 0;
@@ -80,8 +77,7 @@ public class DirHandler {
 
 
 	public String getLastVersion(String filename) throws Exception {
-		try
-		{
+		try {
 			return root.get(filename).asText();
 		}
 		catch (Exception e){
@@ -100,5 +96,17 @@ public class DirHandler {
 		}
 	}
 
+	public File getTemp() throws Exception{
+		File file1 = new File(file.getPath() + "/temp.tmp");
+		if (file1.exists()){
+			PrintWriter writer = new PrintWriter(file1);
+			writer.close();
+		}
+		else{
+			file1.createNewFile();
+			file1.deleteOnExit();
+		}
+		return file1;
+	}
 
 }

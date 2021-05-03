@@ -24,14 +24,7 @@ public class FileManager {
 		return instance;
 	}
 
-	/**
-	 * Get directory handler by name
-	 * @param user - name of user
-	 * @param repo - name of repo
-	 * @return handler of directory
-	 * @throws Exception - directory doesn't exist
-	 */
-	public synchronized DirHandler getHandler(String user, String repo) throws Exception {
+	private synchronized DirHandler restoreHandler(String user, String repo) throws Exception{
 		String path = "Users/" + user + "/Files/" + repo + "/";
 		if (!handlers.containsKey(path)) {
 			handlers.put(path, new DirHandler(path));
@@ -40,20 +33,33 @@ public class FileManager {
 	}
 
 	/**
+	 * Get directory handler by name
+	 * @param user - name of user
+	 * @param repo - name of repo
+	 * @return handler of directory
+	 * @throws Exception - directory doesn't exist
+	 */
+	public DirHandler getHandler(String user, String repo) throws Exception {
+		return restoreHandler(user, repo).getHandler();
+	}
+
+	/**
 	 * Creates new file version and fills it with pre-stored data from temp
 	 * @param temp  pre-stored file
-	 * @param info information about file
+	 * @param owner - file owner
+	 * @param repo - repo name
+	 * @param name1 - file-name
 	 * @param name name of initial file
 	 * @return version name
 	 * @throws Exception - couldn't create copy
 	 */
-	public String createVersion(File temp, FileInfo info, String name) throws Exception {
+	public String createVersion(File temp, String owner, String repo, String name1, String name) throws Exception {
 		String hash = Misc.bytesToHex(Misc.getSHA256Hash(new FileInputStream(temp)));
-		String path = fileRoot + info.getOwner() + "/Files/" + info.getCommit() + "/data/" + info.getLocalpath() + "/" + info.getName() + "/" + hash;
+		String path = "Users/" + owner + "/Files/" + repo + "/data/" + name1 + "/" + "/" + hash;
 		File newDir = new File(path);
-		if (!newDir.mkdir()) throw new Exception("Can't create new version");
+		if (!newDir.mkdirs()) return hash;//throw new Exception("Can't create new version");
 		File file = new File(newDir.getPath() + "/" + name);
-		if (!file.createNewFile()) throw new Exception("Can't create new version");
+		if (!file.createNewFile()) return hash;//throw new Exception("Can't create new version");
 
 		int size = 8196;
 		byte[] buffer = new byte[size];
@@ -70,28 +76,5 @@ public class FileManager {
 		}
 		return hash;
 	}
-
-	/**
-	 * Sets new version of file into versions info
-	 * @param handler - handler of directory
-	 * @param info - info about file
-	 * @param version - latest file version
-	 * @throws Exception - unable to update
-	 */
-	public void updateLatestVersion(DirHandler handler, FileInfo info, String version) throws Exception
-	{
-		String path = "";
-		if (!info.getLocalpath().equals("")) path = info.getLocalpath();
-		path += info.getName();
-		handler.rewriteVersionEntry(path, version);
-	}
-
-	/**
-	 * Writes latest file versions into zip-stream
-	 * @param out - zip-stream
-	 * @param handler directory handler
-	 */
-	public void getLatestVersions(ZipOutputStream out, DirHandler handler){
-
-	}
+	
 }
