@@ -46,7 +46,7 @@ public class VersionUploadServlet extends HttpServlet {
 		catch(Exception e){
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"server error\"}");
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
 			return;
 		}
 
@@ -67,7 +67,7 @@ public class VersionUploadServlet extends HttpServlet {
 		catch(Exception e){
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"server error\"}");
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
 			return;
 		}
 
@@ -100,7 +100,7 @@ public class VersionUploadServlet extends HttpServlet {
 		catch(Exception e){
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"server error\"}");
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
 			handler.releaseHandler();
 			return;
 		}
@@ -115,7 +115,7 @@ public class VersionUploadServlet extends HttpServlet {
 		catch (Exception e) {
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"server error\"}");
+			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
 		}
 		handler.releaseHandler();
 	}
