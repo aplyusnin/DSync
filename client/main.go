@@ -48,7 +48,7 @@ func main() {
 	structure := getStructure()
 
 	for k, v := range m {
-		println(k + " " + v)
+		//println(k + " " + v)
 
 		flag := false
 
@@ -108,7 +108,7 @@ func main() {
 	go func() {
 		sig := <-sigs
 		fmt.Println(sig.String() + " received")
-		fmt.Println("Exiting")
+		fmt.Println("Terminating")
 		done <- true
 	}()
 
@@ -118,7 +118,7 @@ func main() {
 			SendDirectory(folder)
 			watcher, err := fsnotify.NewWatcher()
 			if err != nil {
-				fmt.Println("ERROR!", err)
+				fmt.Println(err)
 			}
 			defer watcher.Close()
 			for _, f := range folder.Files {
@@ -129,18 +129,17 @@ func main() {
 			for {
 				select {
 				case event := <-watcher.Events:
-					fmt.Printf("EVENT: %#v\n", event)
+					//fmt.Printf("EVENT: %#v\n", event)
 					SendFile(event.Name, folder.RemotePath)
 
 				case err := <-watcher.Errors:
 					fmt.Println("ERROR", err)
 				}
 			}
-			println("end")
 		}()
 	}
 
-	fmt.Println(structure)
+	//fmt.Println(structure)
 
 	fmt.Println("Running")
 
