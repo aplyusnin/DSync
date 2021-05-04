@@ -5,9 +5,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import ru.nsu.fit.dsync.server.servlets.VersionControlServlet;
-import ru.nsu.fit.dsync.server.servlets.VersionDownloadServlet;
-import ru.nsu.fit.dsync.server.servlets.VersionUploadServlet;
+import ru.nsu.fit.dsync.server.servlets.*;
 
 public class Main {
 
@@ -21,6 +19,9 @@ public class Main {
 		handler.addServlet(VersionDownloadServlet.class, "/DOWNLOAD");
 		handler.addServlet(VersionUploadServlet.class, "/UPLOAD").getRegistration()
 				.setMultipartConfig(new MultipartConfigElement("./Temp.dat", 1024 * 1024 * 5, 1024 * 1024 * 5 * 5, 1024 * 1024));
+		handler.addServlet(CreateRepoServlet.class, "/NEWREPO");
+		handler.addServlet(CreateUserServlet.class, "/NEWUSER");
+		handler.addServlet(GetRepoInfoServlet.class, "/REPOINFO");
 
 		HandlerList handlers = new HandlerList();
 		handlers.setHandlers(new Handler[] { handler });

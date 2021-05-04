@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
+import ru.nsu.fit.dsync.utils.Pair;
 
 import java.io.*;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 
@@ -107,6 +110,16 @@ public class DirHandler {
 			file1.deleteOnExit();
 		}
 		return file1;
+	}
+
+	public List<Pair<String, String>> getFiles() {
+		File[] flist = new File(file.getPath()).listFiles();
+		List<Pair<String, String>> res = new LinkedList<>();
+		for (var x : flist){
+			if (x.isDirectory())
+				res.add(new Pair<>(x.getName(), root.get(x.getName()).asText()));
+		}
+		return res;
 	}
 
 }

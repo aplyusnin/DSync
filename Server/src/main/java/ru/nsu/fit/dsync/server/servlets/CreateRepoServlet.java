@@ -1,5 +1,6 @@
 package ru.nsu.fit.dsync.server.servlets;
 
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,12 +13,11 @@ import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
 import java.io.IOException;
 
-
-@WebServlet("/HashGetter")
-public class VersionControlServlet extends HttpServlet {
-
+@WebServlet("/RepoCreation")
+public class CreateRepoServlet extends HttpServlet {
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+	{
 		String login = req.getParameter("login");
 		String password = req.getParameter("password");
 		try {
@@ -38,10 +38,16 @@ public class VersionControlServlet extends HttpServlet {
 		}
 
 		String repository = req.getParameter("repo");
-		String filename =  req.getParameter("filename");
-		DirHandler handler;
+
+		if (!UserMetaData.getInstance().isUserExists(login)){
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"User doesn't exist\"}");
+			return;
+		}
+
 		try {
-			handler = FileManager.getInstance().getHandler(login, repository);
+			UserMetaData.getInstance().createRepo(login, repository);
 		}
 		catch (InvalidRequestDataException e)
 		{
@@ -56,24 +62,8 @@ public class VersionControlServlet extends HttpServlet {
 			resp.getWriter().println("{ \"error\": \"server error\"}");
 			return;
 		}
-
-		try {
-			String version = handler.getLastVersion(filename);
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"version\" : \"" + version + "\"}");
-		}
-		catch (InvalidRequestDataException e) {
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
-		}
-		catch(Exception e){
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"server error\"}");
-		}
-		handler.releaseHandler();
+		resp.setContentType("application/json");
+		resp.setStatus(HttpServletResponse.SC_OK);
+		resp.getWriter().println("{ \"status\": \"success\"}");
 	}
-
 }
