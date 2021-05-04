@@ -81,7 +81,7 @@ func SendDirectory(folder Folder) {
 	//fmt.Println("Directory uploaded: " + folder.Path)
 }
 
-func DownloadFile(filename string, remoteDirectory string, version string) {
+func DownloadFile(filename string, remoteDirectory string, version string, localDirectory string) {
 	req, err := http.NewRequest("GET", url+downloadUri, nil)
 	if err != nil {
 		log.Println(err)
@@ -101,6 +101,14 @@ func DownloadFile(filename string, remoteDirectory string, version string) {
 	if err != nil {
 		log.Println(err)
 	}
-	res.Body.Close()
+	defer res.Body.Close()
+
+	file, err := os.Create(localDirectory + filename)
+	if err != nil {
+		log.Println(err)
+	}
+	defer file.Close()
+
+	io.Copy(file, res.Body)
 
 }
