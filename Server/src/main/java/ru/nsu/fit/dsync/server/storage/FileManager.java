@@ -55,7 +55,7 @@ public class FileManager {
 	 */
 	public String createVersion(File temp, String owner, String repo, String name1, String name) throws Exception {
 		String hash = Misc.bytesToHex(Misc.getSHA256Hash(new FileInputStream(temp)));
-		String path = "Users/" + owner + "/Files/" + repo + "/data/" + name1 + "/" + "/" + hash;
+		String path = "Users/" + owner + "/Files/" + repo + "/" + name1 + "/" + hash;
 		File newDir = new File(path);
 		if (!newDir.mkdirs()) return hash;//throw new Exception("Can't create new version");
 		File file = new File(newDir.getPath() + "/" + name);
