@@ -14,16 +14,12 @@ var url = "http://localhost:8090"
 var uploadUri = "/UPLOAD"
 var downloadUri = "/DOWNLOAD"
 
-func SendFile(filename string, remoteDirectory string) {
+func UploadFile(filename string, remoteDirectory string) {
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	//contents, err := ioutil.ReadAll(file)
-	if err != nil {
-		fmt.Println(err)
-	}
 	fi, err := file.Stat()
 	if err != nil {
 		fmt.Println(err)
@@ -38,9 +34,7 @@ func SendFile(filename string, remoteDirectory string) {
 		fmt.Println(err)
 	}
 
-	io.Copy(part, file) // new
-
-	//part.Write(contents)
+	io.Copy(part, file)
 
 	err = writer.Close()
 	if err != nil {
@@ -66,19 +60,18 @@ func SendFile(filename string, remoteDirectory string) {
 	resp, err := client.Do(request)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+	} else {
+		var responseBody []byte
+		resp.Body.Read(responseBody)
+		resp.Body.Close()
+		fmt.Println("File uploaded: " + filename)
 	}
-
-	var respbody []byte
-	resp.Body.Read(respbody)
-	resp.Body.Close()
-	fmt.Println("File uploaded: " + filename)
 }
 
-func SendDirectory(folder Folder) {
+func UploadDirectory(folder Folder) {
 	for _, file := range folder.Files {
-		SendFile(folder.Path+file.Name, folder.RemotePath)
+		UploadFile(folder.Path+file.Name, folder.RemotePath)
 	}
-	//fmt.Println("Directory uploaded: " + folder.Path)
 }
 
 func DownloadFile(filename string, remoteDirectory string, version string, localDirectory string) {

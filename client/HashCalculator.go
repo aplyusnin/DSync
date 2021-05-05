@@ -13,10 +13,10 @@ func Hash(filename string) []byte {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, f); err != nil {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, f); err != nil {
 		log.Fatal(err)
 	}
 
-	return hasher.Sum(nil)
+	return hash.Sum(nil)
 }

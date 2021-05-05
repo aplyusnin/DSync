@@ -13,31 +13,6 @@ type Folder struct {
 }
 
 func Marshal(a []Folder) []byte {
-	/*	heh := []Folder{
-			{
-				Path: "path",
-				Files: []File{
-					{
-						Name: "file1",
-						Hash: "hash1",
-					},
-					{
-						Name: "file2",
-						Hash: "hash2",
-					},
-				},
-			},
-			{
-				Path: "path2",
-				Files: []File{
-					{
-						Name: "file3",
-						Hash: "hash3",
-					},
-				},
-			},
-		}
-	*/
 	b, err := json.Marshal(a)
 	if err != nil {
 		println(err)

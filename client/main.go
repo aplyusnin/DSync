@@ -13,7 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-var path string = os.Getenv("HOME") + "/.dsync"
+var configPath = os.Getenv("HOME") + "/.dsync"
 
 func getFoldersMap(args []string) map[string]string {
 	m := make(map[string]string)
@@ -36,19 +36,11 @@ func getFoldersMap(args []string) map[string]string {
 }
 
 func main() {
-	//fmt.Println("heh")
-
 	m := getFoldersMap(os.Args[1:])
 
-	//fmt.Println(m)
-
-	//fmt.Println(hex.EncodeToString(Hash(os.Getenv("HOME") + "/file")))
-	//	println(string(Marshal()))
-
-	structure := getStructure()
+	var structure []Folder
 
 	for k, v := range m {
-		//println(k + " " + v)
 
 		flag := false
 
@@ -68,8 +60,8 @@ func main() {
 						// nested directory, todo make a function for that
 					} else {
 						flag1 := false
-						for _, filedescr := range str.Files {
-							if filedescr.Name == file.Name() {
+						for _, fileDescription := range str.Files {
+							if fileDescription.Name == file.Name() {
 								flag1 = true
 							}
 						}
@@ -89,7 +81,6 @@ func main() {
 				panic("Cannot open directory: " + k)
 			}
 			for _, file := range files {
-				//println(file.Name())
 				if file.IsDir() {
 					// nested directory, todo make a function for that
 				} else {
@@ -115,7 +106,7 @@ func main() {
 	for _, folder := range structure {
 		folder := folder
 		go func() {
-			SendDirectory(folder)
+			UploadDirectory(folder)
 			watcher, err := fsnotify.NewWatcher()
 			if err != nil {
 				fmt.Println(err)
@@ -130,7 +121,7 @@ func main() {
 				select {
 				case event := <-watcher.Events:
 					//fmt.Printf("EVENT: %#v\n", event)
-					SendFile(event.Name, folder.RemotePath)
+					UploadFile(event.Name, folder.RemotePath)
 
 				case err := <-watcher.Errors:
 					fmt.Println("ERROR", err)
@@ -139,20 +130,16 @@ func main() {
 		}()
 	}
 
-	//fmt.Println(structure)
-
 	fmt.Println("Running")
 
 	if len(structure) > 0 {
-
 		<-done
-
 	}
 }
 
 func touch() {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err := os.MkdirAll(path, os.ModePerm)
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		err := os.MkdirAll(configPath, os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -170,33 +157,13 @@ func touch() {
 
 		file.Write(out)
 		file.Close()
-
-	}
-}
-
-func process(folders []Folder) {
-
-	for true {
-		for _, folder := range folders {
-			for _, file := range folder.Files {
-				actualHash := Hash(folder.Path + file.Name)
-				if hex.EncodeToString(actualHash) != file.Hash {
-
-				}
-			}
-		}
 	}
 }
 
 func getStructure() []Folder {
 	touch()
 
-	/*file, err := os.Open(path + "/config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	*/
-	b, err := ioutil.ReadFile(path + "/config.json")
+	b, err := ioutil.ReadFile(configPath + "/config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
