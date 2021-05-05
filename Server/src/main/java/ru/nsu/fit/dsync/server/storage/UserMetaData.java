@@ -1,8 +1,6 @@
 package ru.nsu.fit.dsync.server.storage;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -19,7 +17,7 @@ public class UserMetaData {
 	private static UserMetaData instance = null;
 	private HashMap<String, HashSet<String>> availableFiles;
 
-	private String root = "/Users";
+	private String root = "Users";
 
 	private UserMetaData(){
 		availableFiles = new HashMap<>();
@@ -32,7 +30,7 @@ public class UserMetaData {
 
 
 	public File findUser(String user) throws Exception {
-		File f =  new File("Users/" + user);
+		File f =  new File(root + "/" + user);
 
 		if (!f.exists() || !f.isDirectory()) throw new InvalidRequestDataException("User doesn't exists");
 
@@ -85,5 +83,31 @@ public class UserMetaData {
 	    }
     }
 
+    public boolean isUserExists(String username){
+		File f = new File(root + "/" + username);
+		return f.exists();
+	}
+
+	public void createUser(String username, String password) throws Exception {
+		byte[] hash = Misc.getSHA256Hash(password);
+		File file = new File(root + "/" + username);
+		System.out.println(file.mkdirs());
+		File pass = new File(root + "/" + username + "/password.bin");
+		System.out.println(pass.createNewFile());
+		System.out.flush();
+		OutputStream out = new FileOutputStream(pass);
+		out.write(hash);
+		out.close();
+	}
+
+	public void createRepo(String username, String repo) throws InvalidRequestDataException, Exception {
+		File file = new File(root + "/" + username + "/Files/" + repo);
+		if (file.exists()) throw new InvalidRequestDataException("repo already exists");
+		file.mkdirs();
+		File versions = new File(root + "/" +username + "/Files/" + repo + "/versions.json");
+		PrintWriter writer = new PrintWriter(new FileOutputStream(versions));
+		writer.println("{}");
+		writer.close();
+	}
 
 }
