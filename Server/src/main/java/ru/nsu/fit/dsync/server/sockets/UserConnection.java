@@ -120,7 +120,7 @@ public class UserConnection {
 			socket.sendMessage(message);
 		}
 		catch (Exception e){
-			System.out.println("HUI: " + e.getMessage());
+			System.out.println(e.getMessage());
 		}
 	}
 
