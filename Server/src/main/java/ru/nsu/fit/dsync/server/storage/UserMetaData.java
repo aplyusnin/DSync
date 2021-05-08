@@ -110,4 +110,10 @@ public class UserMetaData {
 		writer.close();
 	}
 
+
+	public boolean hasAccess(String owner, RepoHandler handler) {
+		return true;
+	}
+
+
 }

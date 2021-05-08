@@ -11,7 +11,7 @@ import java.util.zip.ZipOutputStream;
  */
 public class FileManager {
 	private static FileManager instance = null;
-	private HashMap<String, DirHandler> handlers;
+	private HashMap<String, RepoHandler> handlers;
 
 	private String fileRoot = "src/test/resources/Users/";
 
@@ -24,10 +24,10 @@ public class FileManager {
 		return instance;
 	}
 
-	private synchronized DirHandler restoreHandler(String user, String repo) throws Exception{
+	private synchronized RepoHandler restoreHandler(String user, String repo) throws Exception{
 		String path = "Users/" + user + "/Files/" + repo + "/";
 		if (!handlers.containsKey(path)) {
-			handlers.put(path, new DirHandler(path));
+			handlers.put(path, new RepoHandler(path));
 		}
 		return handlers.get(path);
 	}
@@ -39,7 +39,7 @@ public class FileManager {
 	 * @return handler of directory
 	 * @throws Exception - directory doesn't exist
 	 */
-	public DirHandler getHandler(String user, String repo) throws Exception {
+	public RepoHandler getHandler(String user, String repo) throws Exception {
 		return restoreHandler(user, repo).getHandler();
 	}
 
@@ -76,5 +76,6 @@ public class FileManager {
 		}
 		return hash;
 	}
+
 
 }

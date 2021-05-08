@@ -5,8 +5,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import ru.nsu.fit.dsync.server.storage.DirHandler;
 import ru.nsu.fit.dsync.server.storage.FileManager;
+import ru.nsu.fit.dsync.server.storage.RepoHandler;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
 import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
@@ -39,7 +39,7 @@ public class VersionDownloadServlet extends HttpServlet {
 		String repository = req.getParameter("repo");
 		String filename =  req.getParameter("filename");
 		String version = req.getParameter("version");
-		DirHandler handler;
+		RepoHandler handler;
 		try {
 			handler = FileManager.getInstance().getHandler(login, repository);
 		}

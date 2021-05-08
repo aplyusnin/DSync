@@ -3,19 +3,19 @@ package ru.nsu.fit.dsync.server.storage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
-import ru.nsu.fit.dsync.utils.Pair;
 
 import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
+import ru.nsu.fit.dsync.utils.Pair;
 
 /**
  * Handle of commit.
  */
-public class DirHandler {
+public class  RepoHandler {
 
 	private String name;
 	private File file;
@@ -29,9 +29,9 @@ public class DirHandler {
 	/**
 	 * Creates handler of commit directory
 	 * @param filename - name of directory
-	 * @throws Exception - unable to chreate
+	 * @throws Exception - unable to create
 	 */
-	public DirHandler(String filename) throws Exception{
+	public RepoHandler(String filename) throws Exception{
 		this.file = new File(filename);
 		if (!this.file.isDirectory()) throw new InvalidRequestDataException("Repository doesn't exist");
 		this.versions= new File(filename + "/versions.json");
@@ -45,8 +45,8 @@ public class DirHandler {
 	 * @return - root of commit
 	 * @throws Exception unable to get commit
 	 */
-	public DirHandler getHandler() throws Exception{
-		awaiting.acquire(1);
+	public RepoHandler getHandler() throws Exception{
+	//	awaiting.acquire(1);
 		return this;
 	}
 
@@ -64,7 +64,7 @@ public class DirHandler {
 		catch (Exception e){
 			System.err.println("Can't");
 		}
-		awaiting.release(1);
+		//awaiting.release(1);
 	}
 
 	/**
