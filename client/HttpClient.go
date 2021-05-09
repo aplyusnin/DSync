@@ -13,6 +13,7 @@ import (
 var url = "http://localhost:8090"
 var uploadUri = "/UPLOAD"
 var downloadUri = "/DOWNLOAD"
+var websocketAddress = ""
 
 func UploadFile(filename string, remoteDirectory string) {
 	file, err := os.Open(filename)
@@ -47,8 +48,8 @@ func UploadFile(filename string, remoteDirectory string) {
 	}
 
 	q := request.URL.Query()
-	q.Add("login", "1")
-	q.Add("password", "12345")
+	q.Add("login", Username)
+	q.Add("password", Password)
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", fi.Name())
 	request.URL.RawQuery = q.Encode()
@@ -102,6 +103,10 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	}
 	defer file.Close()
 
-	io.Copy(file, res.Body)
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		log.Println(err)
+	}
 
+	fmt.Println("File downloaded: " + localDirectory + filename)
 }

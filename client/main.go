@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
+	"flag"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,7 +16,37 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+var websocketUri = "ws://localhost:8090/events/"
+
 var configPath = os.Getenv("HOME") + "/.dsync"
+
+var Username = "1"
+var Password = "12345"
+
+type eventMsg struct {
+	Event   string `json:"event"`
+	Owner   string `json:"owner"`
+	Repo    string `json:"repo"`
+	File    string `json:"file"`
+	Version string `json:"version"`
+}
+
+type subscriptionMsg struct {
+	Op    string `json:"op"`
+	Owner string `json:"owner"`
+	Repo  string `json:"repo"`
+}
+
+type loginMsg struct {
+	Op       string `json:"op"`
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+type loginResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
 
 func getFoldersMap(args []string) map[string]string {
 	m := make(map[string]string)
@@ -36,12 +69,17 @@ func getFoldersMap(args []string) map[string]string {
 }
 
 func main() {
+	//	upload := flag.Bool("u", false, "Upload local version upon start")
+	//download := flag.Bool("d", false, "Download remote version upon start")
+	flag.Parse()
+
+	remoteLocalMap := make(map[string][]Folder)
+
 	m := getFoldersMap(os.Args[1:])
 
 	var structure []Folder
 
 	for k, v := range m {
-
 		flag := false
 
 		for _, str := range structure {
@@ -91,6 +129,12 @@ func main() {
 		}
 	}
 
+	for _, folder := range structure {
+		remoteLocalMap[folder.RemotePath] = append(remoteLocalMap[folder.RemotePath], folder)
+	}
+
+	fmt.Println(remoteLocalMap)
+
 	done := make(chan bool)
 	sigs := make(chan os.Signal, 1)
 
@@ -103,9 +147,72 @@ func main() {
 		done <- true
 	}()
 
+	c, _, err := websocket.DefaultDialer.Dial(websocketUri, nil)
+	if err != nil {
+		log.Fatal("Unable to connect: ", err)
+	}
+	defer c.Close()
+
+	err = c.WriteJSON(loginMsg{
+		Op:       "login",
+		Login:    "1",
+		Password: "12345",
+	})
+	if err != nil {
+		log.Fatal("Error during login: ", err)
+	}
+
+	response := loginResponse{}
+	err = c.ReadJSON(&response)
+	if err != nil {
+		log.Fatal("Error during login: ", err)
+	}
+	if response.Status != "success" {
+		log.Fatal("Error: ", response.Error)
+	}
+
+	go func() { // download
+		for {
+			message := eventMsg{}
+			err := c.ReadJSON(&message)
+			if err != nil {
+				fmt.Print("Error from WS: ")
+				fmt.Println(err)
+				return
+			}
+			fmt.Print("Received: ")
+			fmt.Println(message)
+			if message.Event == "fileUpdate" {
+				for _, folder := range remoteLocalMap[message.Repo] {
+					localHash := hex.EncodeToString(Hash(folder.Path + message.File))
+					fmt.Println(localHash)
+					if localHash != message.Version {
+						DownloadFile(message.File, message.Repo, message.Version, folder.Path)
+						//	fmt.Println("Downloaded file: " + folder.Path + message.File)
+					}
+				}
+			}
+		}
+	}()
+
 	for _, folder := range structure {
 		folder := folder
-		go func() {
+		subscription := subscriptionMsg{
+			Op:    "subscribe",
+			Owner: Username,
+			Repo:  folder.RemotePath,
+		}
+		subscriptionBytes, _ := json.Marshal(subscription)
+		fmt.Println(string(subscriptionBytes))
+		//err := c.WriteMessage(websocket.TextMessage, subscriptionBytes)
+		err := c.WriteJSON(subscription)
+		if err != nil {
+			fmt.Print("ERROR!!! ")
+			fmt.Println(err)
+			return
+		}
+
+		go func() { // upload
 			UploadDirectory(folder)
 			watcher, err := fsnotify.NewWatcher()
 			if err != nil {
