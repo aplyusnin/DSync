@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
@@ -12,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -19,6 +19,8 @@ import (
 var websocketUri = "ws://localhost:8090/events/"
 
 var configPath = os.Getenv("HOME") + "/.dsync"
+
+var mu sync.Mutex
 
 var Username = "1"
 var Password = "12345"
@@ -29,6 +31,13 @@ type eventMsg struct {
 	Repo    string `json:"repo"`
 	File    string `json:"file"`
 	Version string `json:"version"`
+}
+
+type latestMsg struct {
+	Op    string `json:"op"`
+	Owner string `json:"owner"`
+	Repo  string `json:"repo"`
+	File  string `json:"file"`
 }
 
 type subscriptionMsg struct {
@@ -46,6 +55,18 @@ type loginMsg struct {
 type loginResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
+}
+
+type latestResponse struct {
+	Version string `json:"version"`
+}
+
+type responseStruct struct {
+	Event   string `json:"event"`
+	Owner   string `json:"owner"`
+	Repo    string `json:"repo"`
+	File    string `json:"file"`
+	Version string `json:"version"`
 }
 
 func getFoldersMap(args []string) map[string]string {
@@ -74,6 +95,13 @@ func mergeFile(folder Folder, filename string, remoteHash string, remoteFolder s
 	if localHash != remoteHash {
 		DownloadFile(filename, remoteFolder, remoteHash, folder.Path)
 		//	fmt.Println("Downloaded file: " + folder.Path + message.File)
+	}
+}
+
+func mergeUploadFile(folder Folder, filename string, remoteHash string, remoteFolder string) {
+	localHash := hex.EncodeToString(Hash(filename))
+	if localHash != remoteHash {
+		UploadFile(filename, remoteFolder)
 	}
 }
 
@@ -147,6 +175,9 @@ func main() {
 	done := make(chan bool)
 	sigs := make(chan os.Signal, 1)
 
+	receivedLatestResponses := make(chan responseStruct)
+	receivedEventsMap := make(chan responseStruct)
+
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	c, _, err := websocket.DefaultDialer.Dial(websocketUri, nil)
@@ -175,13 +206,7 @@ func main() {
 
 	go func() { // download
 		for {
-			message := eventMsg{}
-			err := c.ReadJSON(&message)
-			if err != nil {
-				return
-			}
-			//fmt.Print("Received: ")
-			//fmt.Println(message)
+			message := <-receivedLatestResponses
 			if message.Event == "fileUpdate" {
 				for _, folder := range remoteLocalMap[message.Repo] {
 					mergeFile(folder, message.File, message.Version, message.Repo)
@@ -191,16 +216,32 @@ func main() {
 
 	}()
 
+	go func() {
+		for {
+			r0 := responseStruct{}
+			c.ReadJSON(&r0)
+			if r0.Event == "fileUpdate" {
+				receivedLatestResponses <- r0
+			} else {
+				receivedEventsMap <- r0
+			}
+		}
+	}()
+
+	c.SetPongHandler(func(string) error {
+		c.SetReadDeadline(time.Now().Add(50 * time.Second))
+		return nil
+	})
+
 	for _, folder := range structure {
 		folder := folder
+
 		subscription := subscriptionMsg{
 			Op:    "subscribe",
 			Owner: Username,
 			Repo:  folder.RemotePath,
 		}
-		subscriptionBytes, _ := json.Marshal(subscription)
-		fmt.Println(string(subscriptionBytes))
-		//err := c.WriteMessage(websocket.TextMessage, subscriptionBytes)
+
 		err := c.WriteJSON(subscription)
 		if err != nil {
 			fmt.Print("ERROR!!! ")
@@ -208,11 +249,17 @@ func main() {
 			return
 		}
 
+		for _, file := range folder.Files {
+			query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: file.Name}
+			c.WriteJSON(query)
+			resp := <-receivedEventsMap
+			mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath)
+		}
+
 		go func() { // upload
 			ticker := time.NewTicker(15 * time.Second)
 			defer ticker.Stop()
 
-			UploadDirectory(folder)
 			watcher, err := fsnotify.NewWatcher()
 			if err != nil {
 				fmt.Println(err)
@@ -226,18 +273,24 @@ func main() {
 			for {
 				select {
 				case event := <-watcher.Events:
-					//fmt.Printf("EVENT: %#v\n", event)
-					UploadFile(event.Name, folder.RemotePath)
+					//	fmt.Printf("EVENT: %#v\n", event)
+					query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: strings.Replace(event.Name, folder.Path, "", 1)}
+					err := c.WriteJSON(query)
+					if err != nil {
+						fmt.Println("New error")
+						fmt.Println(err)
+					}
+
+					resp := <-receivedEventsMap
+					mergeUploadFile(folder, event.Name, resp.Version, folder.RemotePath)
+
+					watcher.Add(event.Name)
 
 				case err := <-watcher.Errors:
 					fmt.Println("ERROR", err)
 
 				case <-ticker.C:
-					fmt.Println("TICK")
-					err := c.WriteMessage(websocket.PingMessage, nil)
-					if err != nil {
-						panic(err)
-					}
+					//	fmt.Println("TICK")
 				}
 			}
 		}()
