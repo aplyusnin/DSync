@@ -124,11 +124,7 @@ public class UserConnection {
 			socket.sendMessage(message);
 		}
 		catch (Exception e){
-<<<<<<< HEAD
 			System.err.println(e.getMessage());
-=======
-			System.out.println(e.getMessage());
->>>>>>> f0d1132b1e177a625a4a8e0ebc9d7a5230038b3f
 		}
 	}
 

@@ -4,6 +4,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 public class ClientSocket extends WebSocketAdapter {
+
 	@Override
 	public void onWebSocketBinary(byte[] payload, int offset, int len) {
 		/* do nothing */
