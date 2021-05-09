@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"log"
@@ -12,8 +13,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-
-	"github.com/fsnotify/fsnotify"
+	"time"
 )
 
 var websocketUri = "ws://localhost:8090/events/"
@@ -66,6 +66,15 @@ func getFoldersMap(args []string) map[string]string {
 		m1[p[1]] = p[0]
 	}
 	return m
+}
+
+func mergeFile(folder Folder, filename string, remoteHash string, remoteFolder string) {
+	localHash := hex.EncodeToString(Hash(folder.Path + filename))
+	//fmt.Println(localHash)
+	if localHash != remoteHash {
+		DownloadFile(filename, remoteFolder, remoteHash, folder.Path)
+		//	fmt.Println("Downloaded file: " + folder.Path + message.File)
+	}
 }
 
 func main() {
@@ -140,13 +149,6 @@ func main() {
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		sig := <-sigs
-		fmt.Println(sig.String() + " received")
-		fmt.Println("Terminating")
-		done <- true
-	}()
-
 	c, _, err := websocket.DefaultDialer.Dial(websocketUri, nil)
 	if err != nil {
 		log.Fatal("Unable to connect: ", err)
@@ -176,23 +178,17 @@ func main() {
 			message := eventMsg{}
 			err := c.ReadJSON(&message)
 			if err != nil {
-				fmt.Print("Error from WS: ")
-				fmt.Println(err)
 				return
 			}
-			fmt.Print("Received: ")
-			fmt.Println(message)
+			//fmt.Print("Received: ")
+			//fmt.Println(message)
 			if message.Event == "fileUpdate" {
 				for _, folder := range remoteLocalMap[message.Repo] {
-					localHash := hex.EncodeToString(Hash(folder.Path + message.File))
-					fmt.Println(localHash)
-					if localHash != message.Version {
-						DownloadFile(message.File, message.Repo, message.Version, folder.Path)
-						//	fmt.Println("Downloaded file: " + folder.Path + message.File)
-					}
+					mergeFile(folder, message.File, message.Version, message.Repo)
 				}
 			}
 		}
+
 	}()
 
 	for _, folder := range structure {
@@ -213,6 +209,9 @@ func main() {
 		}
 
 		go func() { // upload
+			ticker := time.NewTicker(15 * time.Second)
+			defer ticker.Stop()
+
 			UploadDirectory(folder)
 			watcher, err := fsnotify.NewWatcher()
 			if err != nil {
@@ -232,12 +231,26 @@ func main() {
 
 				case err := <-watcher.Errors:
 					fmt.Println("ERROR", err)
+
+				case <-ticker.C:
+					fmt.Println("TICK")
+					err := c.WriteMessage(websocket.PingMessage, nil)
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 		}()
 	}
 
 	fmt.Println("Running")
+
+	go func() {
+		sig := <-sigs
+		fmt.Println(sig.String() + " received")
+		fmt.Println("Terminating")
+		done <- true
+	}()
 
 	if len(structure) > 0 {
 		<-done
