@@ -54,7 +54,7 @@ public class ConnectionManager {
 			}
 			if (subscribitions.get(handler).contains(connection)) throw new InvalidRequestDataException("Already subscribed");
 			subscribitions.get(handler).add(connection);
-			notifyOnUpdate(handler, "File1", "3c35bf778a7a6c61a150da8705559da4a4ec58aa4c50fd5ee68586c816deaa8d");
+			//notifyOnUpdate(handler, "File1", "3c35bf778a7a6c61a150da8705559da4a4ec58aa4c50fd5ee68586c816deaa8d");
 		}
 	}
 
