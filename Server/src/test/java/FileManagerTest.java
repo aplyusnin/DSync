@@ -1,4 +1,5 @@
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
 
@@ -11,6 +12,7 @@ import java.util.HashSet;
 public class FileManagerTest {
 
 	@Test
+	@Ignore
 	public void hashTest() {
 		try
 		{
@@ -28,6 +30,7 @@ public class FileManagerTest {
 	}
 
 	@Test
+	@Ignore
 	public void copyTest() {
 		/*try {
 			DirHandler handler = FileManager.getInstance().getHandler("src/test/resources/Users/Alex/Files/Lab1_Source/");

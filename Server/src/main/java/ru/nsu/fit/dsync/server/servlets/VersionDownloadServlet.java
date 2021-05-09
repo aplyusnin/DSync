@@ -65,14 +65,12 @@ public class VersionDownloadServlet extends HttpServlet {
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
-			handler.releaseHandler();
 			return;
 		}
 		catch(Exception e){
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"error\": \"server error\"}");
-			handler.releaseHandler();
 			return;
 		}
 
@@ -85,7 +83,6 @@ public class VersionDownloadServlet extends HttpServlet {
 			out.write(buf, 0, len);
 		}
 
-		handler.releaseHandler();
 
 	}
 

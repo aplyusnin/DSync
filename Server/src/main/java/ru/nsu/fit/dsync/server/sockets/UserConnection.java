@@ -3,6 +3,7 @@ package ru.nsu.fit.dsync.server.sockets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.http.Part;
 import ru.nsu.fit.dsync.server.storage.FileManager;
 import ru.nsu.fit.dsync.server.storage.RepoHandler;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
@@ -31,12 +32,8 @@ public class UserConnection {
 
 	public void receiveMessage(String text){
 		switch (state){
-			case IDLE -> {
-				receiveIdle(text);
-			}
-			case ANONYMOUS -> {
-				receiveAnonymous(text);
-			}
+			case IDLE -> receiveIdle(text);
+			case ANONYMOUS -> receiveAnonymous(text);
 		}
 	}
 
@@ -87,8 +84,20 @@ public class UserConnection {
 			String op = node.get("op").asText();
 
 			switch (op){
-				case "update"->{}
-				case "subscribe"-> {}
+				case "subscribe"-> {
+					String owner = node.get("owner").asText();
+					String repo = node.get("repo").asText();
+					try{
+						ConnectionManager.getInstance().subscribe(owner, repo, this);
+					}
+					catch (InvalidRequestDataException e) {
+						inputError(e.getMessage());
+					}
+					finally {
+						subscribes.add(new Pair<>(owner, repo));
+					}
+
+				}
 				case "latest" -> {
 					String owner = node.get("owner").asText();
 					String repo = node.get("repo").asText();
@@ -96,11 +105,6 @@ public class UserConnection {
 					RepoHandler handler = FileManager.getInstance().getHandler(owner, repo);
 					String version =  handler.getLastVersion(file);
 					sendMessage("{ \"version\" : \"" + version + "\"}");
-				}
-				case "request" -> {
-				}
-				case "repoinfo" -> {
-
 				}
 				default -> throw new InvalidRequestDataException("Invalid operation");
 			}
@@ -120,7 +124,7 @@ public class UserConnection {
 			socket.sendMessage(message);
 		}
 		catch (Exception e){
-			System.out.println("HUI: " + e.getMessage());
+			System.err.println(e.getMessage());
 		}
 	}
 
@@ -133,6 +137,15 @@ public class UserConnection {
 			                           "\"version\" : \"" + version + "\"}");
 		}
 		catch (Exception e){}
+	}
+
+
+	public HashSet<Pair<String, String>> getSubscribes() {
+		return subscribes;
+	}
+
+	public String getUser() {
+		return user;
 	}
 
 }

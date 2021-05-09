@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
+import ru.nsu.fit.dsync.utils.Misc;
 import ru.nsu.fit.dsync.utils.Pair;
 
 /**
@@ -17,81 +17,62 @@ import ru.nsu.fit.dsync.utils.Pair;
  */
 public class  RepoHandler {
 
-	private String name;
-	private File file;
+	public static final int LIMIT = 3;
 
-	private Semaphore awaiting;
+	private String owner;
+	private String repoName;
 	private File versions;
+
 	private ObjectMapper objectMapper = new ObjectMapper();
 	private ObjectNode root;
 	private int changes = 0;
 
-	/**
-	 * Creates handler of commit directory
-	 * @param filename - name of directory
-	 * @throws Exception - unable to create
-	 */
-	public RepoHandler(String filename) throws Exception{
-		this.file = new File(filename);
-		if (!this.file.isDirectory()) throw new InvalidRequestDataException("Repository doesn't exist");
-		this.versions= new File(filename + "/versions.json");
-		this.name = filename;
+	private String repoRoot;
+
+
+	public RepoHandler(String owner, String repoName) throws Exception {
+		File rRoot = new File("Users/" + owner + "/Files/" + repoName);
+		if (!rRoot.exists() || !rRoot.isDirectory()) throw new InvalidRequestDataException("Repo doesn't exist");
+		this.owner = owner;
+		this.repoName = repoName;
+		this.versions = new File("Users/" + owner + "/Files/" + repoName + "/versions.json");
 		this.root = objectMapper.readValue(versions, ObjectNode.class);
-		this.awaiting = new Semaphore(1);
+		repoRoot = "Users/" + owner + "/Files/" + repoName + "/";
 	}
 
-	/**
-	 * Get root of commit, only one thread can work with one handler at the same moment
-	 * @return - root of commit
-	 * @throws Exception unable to get commit
-	 */
-	public RepoHandler getHandler() throws Exception{
-	//	awaiting.acquire(1);
-		return this;
-	}
-
-	/**
-	 * Frees file for other threads
-	 */
-	public void releaseHandler() {
-		try {
-			if (changes > 0) {
-				changes = 0;
-				PrintStream printStream = new PrintStream(new FileOutputStream(versions));
-				printStream.println(root.toString());
+	public String getLastVersion(String filename) throws Exception{
+		synchronized (this) {
+			try {
+				return root.get(filename).asText();
+			}
+			catch (Exception e){
+				throw new InvalidRequestDataException("File doesn't exist");
 			}
 		}
-		catch (Exception e){
-			System.err.println("Can't");
-		}
-		//awaiting.release(1);
 	}
 
-	/**
-	 * Rewrites new latest version association in stored file versions
-	 * @param filename - name of file
-	 * @param version - name of version
-	 */
 	public void rewriteVersionEntry(String filename, String version){
-		TextNode node = new TextNode(version);
-		root.set(filename, node);
-		changes ++;
-	}
-
-
-	public String getLastVersion(String filename) throws Exception {
-		try {
-			return root.get(filename).asText();
-		}
-		catch (Exception e){
-			throw new InvalidRequestDataException("File doesn't exits");
+		synchronized (this){
+			TextNode node = new TextNode(version);
+			root.set(filename, node);
+			changes ++;
+			if (changes > LIMIT){
+				try {
+					changes = 0;
+					PrintStream printStream = new PrintStream(new FileOutputStream(versions));
+					printStream.println(root.toString());
+				}
+				catch (Exception e){
+					System.err.println("Can't rewrite new version");
+				}
+			}
 		}
 	}
 
 	public File findFile(String filename, String version) throws Exception{
 		try {
-			File[] files = new File(file.getPath() + "/" + filename + "/" + version).listFiles();
-			if (files.length != 1) throw new Exception("Invalid storage state: " + file.getPath() + "/" + filename + "/" + version);
+			File[] files = new File(repoRoot + filename + "/" + version).listFiles();
+			if (files.length != 1) throw new Exception("Invalid storage state: " + repoRoot + filename + "/" + version);
 			return files[0];
 		}
 		catch (Exception e){
@@ -99,8 +80,9 @@ public class  RepoHandler {
 		}
 	}
 
+
 	public File getTemp() throws Exception{
-		File file1 = new File(file.getPath() + "/temp.tmp");
+		File file1 = new File(repoRoot + "temp.tmp");
 		if (file1.exists()){
 			PrintWriter writer = new PrintWriter(file1);
 			writer.close();
@@ -113,13 +95,51 @@ public class  RepoHandler {
 	}
 
 	public List<Pair<String, String>> getFiles() {
-		File[] flist = new File(file.getPath()).listFiles();
+		File[] flist = new File(repoRoot).listFiles();
 		List<Pair<String, String>> res = new LinkedList<>();
 		for (var x : flist){
 			if (x.isDirectory())
 				res.add(new Pair<>(x.getName(), root.get(x.getName()).asText()));
 		}
 		return res;
+	}
+
+	/**
+	 * Creates new file version and fills it with pre-stored data from temp
+	 * @param temp  pre-stored file
+	 * @param name1 - file-name
+	 * @param name name of initial file
+	 * @return version name
+	 * @throws Exception - couldn't create copy
+	 */
+	public String createVersion(File temp, String name1, String name) throws Exception {
+		String hash = Misc.bytesToHex(Misc.getSHA256Hash(new FileInputStream(temp)));
+		String path = repoRoot + name1 + "/" + hash;
+		File newDir = new File(path);
+		if (!newDir.mkdirs()) return hash;//throw new Exception("Can't create new version");
+		File file = new File(newDir.getPath() + "/" + name);
+		if (!file.createNewFile()) return hash;//throw new Exception("Can't create new version");
+		int size = 8196;
+		byte[] buffer = new byte[size];
+		int count = 0;
+
+		InputStream inputStream = new FileInputStream(temp);
+		OutputStream outputStream = new FileOutputStream(file);
+
+		while ((count = inputStream.read(buffer)) > 0)
+		{
+			outputStream.write(buffer, 0, count);
+		}
+		return hash;
+	}
+
+
+	public String getOwner() {
+		return owner;
+	}
+
+	public String getRepoName() {
+		return repoName;
 	}
 
 }

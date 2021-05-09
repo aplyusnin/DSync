@@ -73,7 +73,6 @@ public class VersionControlServlet extends HttpServlet {
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"error\": \"server error\"}");
 		}
-		handler.releaseHandler();
 	}
 
 }

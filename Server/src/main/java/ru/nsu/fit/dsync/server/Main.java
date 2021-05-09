@@ -42,6 +42,7 @@ public class Main {
 			server.start();
 			System.out.println("Listening port: " + port);
 			server.join();
+
 		}
 		catch (Exception e){
 			System.out.println("Error.");

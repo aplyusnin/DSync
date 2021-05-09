@@ -24,6 +24,6 @@ dependencies {
     implementation group: 'org.eclipse.jetty', name: 'jetty-servlet', version: '11.0.2'
     implementation 'org.eclipse.jetty.websocket:websocket-jetty-server:11.0.2'
     implementation 'org.eclipse.jetty.websocket:websocket-jetty-client:11.0.2'
-
-
 }
+
+mainClassName = 'ru.nsu.fit.dsync.server.Main'

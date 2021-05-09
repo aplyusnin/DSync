@@ -3,7 +3,6 @@ package ru.nsu.fit.dsync.server.storage;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -73,10 +72,6 @@ public class UserMetaData {
 	    byte[] hashServer = getUserPasswordHash(user);
 	    byte[] hashClient = Misc.getSHA256Hash(password);
 
-
-//	    File passwordHashFile = new File("Users/" + user + "/password.bin");
-//	    FileOutputStream out = new FileOutputStream(passwordHashFile);
-//	    out.write(hashClient, 0, 32);
 	    for (int i = 0; i < 32; i++) {
 			if (hashServer[i] != hashClient[i])
 		        throw new InvalidRequestDataException("Incorrect password");
@@ -100,7 +95,7 @@ public class UserMetaData {
 		out.close();
 	}
 
-	public void createRepo(String username, String repo) throws InvalidRequestDataException, Exception {
+	public void createRepo(String username, String repo) throws Exception {
 		File file = new File(root + "/" + username + "/Files/" + repo);
 		if (file.exists()) throw new InvalidRequestDataException("repo already exists");
 		file.mkdirs();

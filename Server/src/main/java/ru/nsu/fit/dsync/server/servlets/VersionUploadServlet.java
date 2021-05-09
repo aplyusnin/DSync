@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import ru.nsu.fit.dsync.server.sockets.ConnectionManager;
 import ru.nsu.fit.dsync.server.storage.RepoHandler;
 import ru.nsu.fit.dsync.server.storage.FileManager;
 import ru.nsu.fit.dsync.server.storage.UserMetaData;
@@ -71,53 +72,57 @@ public class VersionUploadServlet extends HttpServlet {
 			return;
 		}
 
-		File temp;
 		Part p = req.getParts().iterator().next();
-		try
+		File temp;
+		synchronized (handler)
 		{
-			temp = handler.getTemp();
-
-			InputStream input = p.getInputStream();
-			OutputStream output = new FileOutputStream(temp);
-
-			byte[] buffer = new byte[1024];
-			int read = 0;
-
-			while ((read = input.read(buffer)) > 0)
+			try
 			{
-				output.write(buffer, 0, read);
+				temp = handler.getTemp();
+				InputStream input = p.getInputStream();
+				OutputStream output = new FileOutputStream(temp);
+
+				byte[] buffer = new byte[1024];
+				int read = 0;
+
+				while ((read = input.read(buffer)) > 0)
+				{
+					output.write(buffer, 0, read);
+				}
+
+				output.close();
+			}
+			catch (InvalidRequestDataException e)
+			{
+				resp.setContentType("application/json");
+				resp.setStatus(HttpServletResponse.SC_OK);
+				resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
+				return;
+			}
+			catch (Exception e)
+			{
+				resp.setContentType("application/json");
+				resp.setStatus(HttpServletResponse.SC_OK);
+				resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n" + e.getStackTrace().toString() + "\n\"}");
+				return;
 			}
 
-			output.close();
+			try
+			{
+				String hash = handler.createVersion(temp, filename, getFileName(p));
+				handler.rewriteVersionEntry(filename, hash);
+				ConnectionManager.getInstance().notifyOnUpdate(handler, filename, hash);
+				resp.setContentType("application/json");
+				resp.setStatus(HttpServletResponse.SC_OK);
+				resp.getWriter().println("{ \"version\": \"" + hash + "\"}");
+			}
+			catch (Exception e)
+			{
+				resp.setContentType("application/json");
+				resp.setStatus(HttpServletResponse.SC_OK);
+				resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n" + e.getStackTrace().toString() + "\n\"}");
+			}
 		}
-		catch (InvalidRequestDataException e) {
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
-			handler.releaseHandler();
-			return;
-		}
-		catch(Exception e){
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
-			handler.releaseHandler();
-			return;
-		}
-
-		try {
-			String hash = FileManager.getInstance().createVersion(temp, login, repository, filename, getFileName(p));
-			handler.rewriteVersionEntry(filename, hash);
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"version\": \"" + hash + "\"}");
-		}
-		catch (Exception e) {
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
-		}
-		handler.releaseHandler();
 	}
 
 }

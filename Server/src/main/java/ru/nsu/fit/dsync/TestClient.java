@@ -31,7 +31,9 @@ public class TestClient {
 				socket.sendMessage("{\"op\" : \"latest\", \"owner\" : \"1\", \"repo\" : \"repo1\", \"file\" : \"File1\"}");
 
 				Thread.sleep(1000);
+				socket.sendMessage("{\"op\" : \"subscribe\", \"owner\" : \"1\", \"repo\" : \"repo1\"}");
 
+				Thread.sleep(1000);
 				// Close session
 				session.close();
 			}
