@@ -130,7 +130,7 @@ public class UserMetaData {
 	}
 
 	public void addAccess(String user, RepoHandler handler){
-		if (handler.getOwner().equals(user)) return;
+		if (hasAccess(user, handler)) return;
 		try
 		{
 			File file = new File("Users/" + user + "/access.json");
@@ -142,8 +142,12 @@ public class UserMetaData {
 			}
 			node.add(handler.getRepoName());
 			root.set(handler.getOwner(), node);
-			PrintWriter writer = new PrintWriter(file);
+			FileWriter writer1 = new FileWriter("Users/" + user + "/access.json");
+			PrintWriter writer = new PrintWriter(writer1);
 			writer.println(root.toString());
+			writer.flush();
+			writer1.flush();
+			writer1.close();
 		}
 		catch (Exception e) {
 			return;
