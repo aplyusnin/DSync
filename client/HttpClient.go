@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -13,7 +14,17 @@ import (
 var url = "http://localhost:8090"
 var uploadUri = "/UPLOAD"
 var downloadUri = "/DOWNLOAD"
+var repoInfoUri = "/REPOINFO"
 var websocketAddress = ""
+
+type RemoteRepoInfo struct {
+	Files []RemoteFileInfo `json:"files"`
+}
+
+type RemoteFileInfo struct {
+	Filename string `json:"filename"`
+	Version  string `json:"version"`
+}
 
 func UploadFile(filename string, remoteDirectory string) {
 	file, err := os.Open(filename)
@@ -52,6 +63,7 @@ func UploadFile(filename string, remoteDirectory string) {
 	q.Add("password", Password)
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", fi.Name())
+	q.Add("owner", Username)
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add("Content-Type", writer.FormDataContentType())
@@ -89,6 +101,7 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", filename)
 	q.Add("version", version)
+	q.Add("owner", "1")
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
@@ -109,4 +122,32 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	}
 
 	fmt.Println("File downloaded: " + localDirectory + filename)
+}
+
+func GetRepoInfo(repoName string) RemoteRepoInfo {
+	req, err := http.NewRequest("GET", url+repoInfoUri, nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	client := &http.Client{}
+
+	q := req.URL.Query()
+	q.Add("login", "1")
+	q.Add("password", "12345")
+	q.Add("repo", repoName)
+	q.Add("owner", "1")
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+	defer res.Body.Close()
+
+	info := RemoteRepoInfo{}
+
+	json.NewDecoder(res.Body).Decode(&info)
+
+	return info
 }

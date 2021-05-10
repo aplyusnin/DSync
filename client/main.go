@@ -90,11 +90,16 @@ func getFoldersMap(args []string) map[string]string {
 }
 
 func mergeFile(folder Folder, filename string, remoteHash string, remoteFolder string) {
-	localHash := hex.EncodeToString(Hash(folder.Path + filename))
-	//fmt.Println(localHash)
-	if localHash != remoteHash {
+
+	if _, err := os.Stat(folder.Path + filename); os.IsNotExist(err) {
 		DownloadFile(filename, remoteFolder, remoteHash, folder.Path)
-		//	fmt.Println("Downloaded file: " + folder.Path + message.File)
+	} else {
+		localHash := hex.EncodeToString(Hash(folder.Path + filename))
+		//fmt.Println(localHash)
+		if localHash != remoteHash {
+			DownloadFile(filename, remoteFolder, remoteHash, folder.Path)
+			//	fmt.Println("Downloaded file: " + folder.Path + message.File)
+		}
 	}
 }
 
@@ -110,10 +115,20 @@ func main() {
 	download := flag.Bool("d", false, "Download remote version upon start")
 	flag.Parse()
 
+	if *upload && *download {
+		fmt.Println("Both upload and download flags are specified")
+		os.Exit(1)
+	}
+
+	if !*upload && !*download {
+		fmt.Println("No upload or download flag specified")
+		os.Exit(1)
+	}
+
 	remoteLocalMap := make(map[string][]Folder)
 
-	println(upload)
-	println(download)
+	//println(upload)
+	//println(download)
 
 	m := getFoldersMap(flag.Args())
 
@@ -252,11 +267,32 @@ func main() {
 			return
 		}
 
-		for _, file := range folder.Files {
-			query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: file.Name}
-			c.WriteJSON(query)
-			resp := <-receivedEventsMap
-			mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath)
+		if *upload {
+			for _, file := range folder.Files {
+				query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: file.Name}
+				c.WriteJSON(query)
+				resp := <-receivedEventsMap
+				mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath)
+			}
+
+			remoteRepoInfo := GetRepoInfo(folder.RemotePath)
+
+			for _, fileInfo := range remoteRepoInfo.Files {
+				mergeFile(folder, fileInfo.Filename, fileInfo.Version, folder.RemotePath)
+			}
+		} else {
+			remoteRepoInfo := GetRepoInfo(folder.RemotePath)
+
+			for _, fileInfo := range remoteRepoInfo.Files {
+				mergeFile(folder, fileInfo.Filename, fileInfo.Version, folder.RemotePath)
+			}
+
+			for _, file := range folder.Files {
+				query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: file.Name}
+				c.WriteJSON(query)
+				resp := <-receivedEventsMap
+				mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath)
+			}
 		}
 
 		go func() { // upload
