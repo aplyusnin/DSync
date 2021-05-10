@@ -106,13 +106,16 @@ func mergeUploadFile(folder Folder, filename string, remoteHash string, remoteFo
 }
 
 func main() {
-	//	upload := flag.Bool("u", false, "Upload local version upon start")
-	//download := flag.Bool("d", false, "Download remote version upon start")
+	upload := flag.Bool("u", false, "Upload local version upon start")
+	download := flag.Bool("d", false, "Download remote version upon start")
 	flag.Parse()
 
 	remoteLocalMap := make(map[string][]Folder)
 
-	m := getFoldersMap(os.Args[1:])
+	println(upload)
+	println(download)
+
+	m := getFoldersMap(flag.Args())
 
 	var structure []Folder
 
@@ -170,7 +173,7 @@ func main() {
 		remoteLocalMap[folder.RemotePath] = append(remoteLocalMap[folder.RemotePath], folder)
 	}
 
-	fmt.Println(remoteLocalMap)
+	//fmt.Println(remoteLocalMap)
 
 	done := make(chan bool)
 	sigs := make(chan os.Signal, 1)

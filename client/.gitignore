@@ -3,3 +3,4 @@
 !*.go
 !go.mod
 !Makefile
+!readme.md
