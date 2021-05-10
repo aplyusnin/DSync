@@ -20,6 +20,7 @@ public class VersionControlServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		String login = req.getParameter("login");
 		String password = req.getParameter("password");
+
 		try {
 			UserMetaData.getInstance().validateUserData(login, password);
 		}
@@ -36,12 +37,12 @@ public class VersionControlServlet extends HttpServlet {
 			resp.getWriter().println("{ \"error\": \"server error\"}");
 			return;
 		}
-
+		String owner = req.getParameter("owner");
 		String repository = req.getParameter("repo");
 		String filename =  req.getParameter("filename");
 		RepoHandler handler;
 		try {
-			handler = FileManager.getInstance().getHandler(login, repository);
+			handler = FileManager.getInstance().getHandler(owner, repository);
 		}
 		catch (InvalidRequestDataException e)
 		{
@@ -54,6 +55,13 @@ public class VersionControlServlet extends HttpServlet {
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.getWriter().println("{ \"error\": \"server error\"}");
+			return;
+		}
+
+		if (!UserMetaData.getInstance().hasAccess(login, handler)) {
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"access denied\"}");
 			return;
 		}
 

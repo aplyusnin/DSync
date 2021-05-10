@@ -44,6 +44,13 @@ public class RepoSharingServlet extends HttpServlet {
 		String repository = req.getParameter("repo");
 		String user = req.getParameter("user");
 
+		if (!UserMetaData.getInstance().isUserExists(user)){
+			resp.setContentType("application/json");
+			resp.setStatus(HttpServletResponse.SC_OK);
+			resp.getWriter().println("{ \"error\": \"user doesn't exist\"}");
+			return;
+		}
+
 		RepoHandler handler;
 
 		try{
