@@ -25,6 +25,7 @@ public class Main {
 		handler.addServlet(CreateRepoServlet.class, "/NEWREPO");
 		handler.addServlet(CreateUserServlet.class, "/NEWUSER");
 		handler.addServlet(GetRepoInfoServlet.class, "/REPOINFO");
+		handler.addServlet(RepoSharingServlet.class, "/SHARE");
 		
 		/*HandlerList handlers = new HandlerList();
 		handlers.setHandlers(new Handler[] { handler });*/
