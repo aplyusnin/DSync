@@ -68,15 +68,16 @@ public class GetRepoInfoServlet extends HttpServlet {
 			var t = handler.getFiles();
 			resp.setContentType("application/json");
 			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{");
+			resp.getWriter().println("{ files: [");
+
 			int id = 1;
 			for (var x : t){
-				resp.getWriter().print("\"" + x.first + "\" : \"" +x.second + "\"");
+				resp.getWriter().print("{\"filename\" : \"" + x.first + "\", \"version\" : \"" + x.second + "\"}");
 				if (id != t.size()) resp.getWriter().println(",");
 				else resp.getWriter().println("");
 				id++;
 			}
-			resp.getWriter().println("}");
+			resp.getWriter().println("]}");
 		}
 		catch(Exception e){
 			resp.setContentType("application/json");
