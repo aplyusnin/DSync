@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 import ru.nsu.fit.dsync.utils.Misc;
@@ -86,13 +87,16 @@ public class UserMetaData {
 	public void createUser(String username, String password) throws Exception {
 		byte[] hash = Misc.getSHA256Hash(password);
 		File file = new File(root + "/" + username);
-		System.out.println(file.mkdirs());
 		File pass = new File(root + "/" + username + "/password.bin");
-		System.out.println(pass.createNewFile());
-		System.out.flush();
+		pass.createNewFile();
 		OutputStream out = new FileOutputStream(pass);
 		out.write(hash);
 		out.close();
+		File access = new File(root + "/" + username + "/access.json");
+		access.createNewFile();
+		PrintWriter writer = new PrintWriter(new FileOutputStream(access));
+		writer.println("{}");
+		writer.close();
 	}
 
 	public void createRepo(String username, String repo) throws Exception {
@@ -106,9 +110,44 @@ public class UserMetaData {
 	}
 
 
-	public boolean hasAccess(String owner, RepoHandler handler) {
-		return true;
+	public boolean hasAccess(String user, RepoHandler handler) {
+		if (handler.getOwner().equals(user)) return true;
+		File file = new File("Users/" + user + "/access.json");
+		if (!file.exists()) return false;
+		ObjectMapper objectMapper = new ObjectMapper();
+		try
+		{
+			ObjectNode root = objectMapper.readValue(file, ObjectNode.class);
+			ArrayNode node = (ArrayNode) root.get(handler.getOwner());
+			for (int i = 0; i < node.size(); i++){
+				if (node.get(i).asText().equals(handler.getRepoName())) return true;
+			}
+			return false;
+		}
+		catch (Exception e) {
+			return false;
+		}
 	}
 
+	public void addAccess(String user, RepoHandler handler){
+		if (handler.getOwner().equals(user)) return;
+		try
+		{
+			File file = new File("Users/" + user + "/access.json");
+			ObjectMapper objectMapper = new ObjectMapper();
+			ObjectNode root = objectMapper.readValue(file, ObjectNode.class);
+			ArrayNode node = (ArrayNode) root.get(handler.getOwner());
+			if (node == null){
+				node = objectMapper.createArrayNode();
+			}
+			node.add(handler.getRepoName());
+			root.set(handler.getOwner(), node);
+			PrintWriter writer = new PrintWriter(file);
+			writer.println(root.toString());
+		}
+		catch (Exception e) {
+			return;
+		}
+	}
 
 }

@@ -24,7 +24,7 @@ public class Main {
 				.setMultipartConfig(new MultipartConfigElement("./Temp.dat", 1024 * 1024 * 5, 1024 * 1024 * 5 * 5, 1024 * 1024));
 		handler.addServlet(CreateRepoServlet.class, "/NEWREPO");
 		handler.addServlet(CreateUserServlet.class, "/NEWUSER");
-		/*handler.addServlet(GetRepoInfoServlet.class, "/REPOINFO");*/
+		handler.addServlet(GetRepoInfoServlet.class, "/REPOINFO");
 		
 		/*HandlerList handlers = new HandlerList();
 		handlers.setHandlers(new Handler[] { handler });*/

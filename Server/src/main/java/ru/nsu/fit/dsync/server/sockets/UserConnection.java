@@ -87,6 +87,10 @@ public class UserConnection {
 				case "subscribe"-> {
 					String owner = node.get("owner").asText();
 					String repo = node.get("repo").asText();
+					RepoHandler handler = FileManager.getInstance().getHandler(owner, repo);
+					if (!UserMetaData.getInstance().hasAccess(user, handler)){
+						throw new InvalidRequestDataException("Access denied");
+					}
 					try{
 						ConnectionManager.getInstance().subscribe(owner, repo, this);
 					}
@@ -103,6 +107,9 @@ public class UserConnection {
 					String repo = node.get("repo").asText();
 					String file = node.get("file").asText();
 					RepoHandler handler = FileManager.getInstance().getHandler(owner, repo);
+					if (!UserMetaData.getInstance().hasAccess(user, handler)){
+						throw new InvalidRequestDataException("Access denied");
+					}
 					String version =  handler.getLastVersion(file);
 					sendMessage("{ \"version\" : \"" + version + "\"}");
 				}
