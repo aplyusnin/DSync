@@ -1,8 +1,49 @@
 # DSync
 
-# Usecases
+## Usage
 
-## User logs-in into sysem
+Compile client:
+```
+cd client
+make
+```
+
+Launch server: 
+```
+cd Server
+gradle run
+```
+
+Synchronize a directory with remote directory `repo1`, overwriting the changes on server:
+```
+./client/dsync -u /local/directory/name/:repo1
+```
+Expected behavior: any files in the local directory is uploaded to server if it is not stored on server or has differences with the corresponding file on server. After that, all files on server which are not found in the local directory are downloaded.
+
+Synchronize a directory with remote directory `repo1`, overwriting local changes:
+```
+./client/dsync -d /local/directory/name/:repo1
+```
+Expected behavior: any file in the remote directory is downloaded unless it is already stored in local directory and has no differences between local and remote versions.
+
+In both cases, once a file in a local directory is changed when client is running, it is uploaded to the server and downloaded to all other local directories which are synchronized with the same remote directory. For example, here two local directories are synchronized with the same remote directory:
+
+```
+./client/dsync -u /local/directory1/:repo1
+./client/dsync -u /local/directory2/:repo1
+```
+If a file in directory `directory1` is changed, its new version is uploaded by the first instance of the client and then downloaded by the second instance of the client to directory `directory2`. Similarly, if a file in `directory2` is changed, it will uploaded to the server and downloaded to `directory1`.
+
+In contrast, suppose that two local directories are synchronized to different remote directories:
+```
+./client/dsync -u /local/directory1/:repo1
+./client/dsync -u /local/directory2/:repo2
+```
+In this case, if a file `directory1` is changed, its new version is uploaded by the first instance of the client as well, although it is not downloaded to `directory2` by the second instance of the client.
+
+## Usecases
+
+### User logs-in into sysem
 
 1. User enters their login and password.
 2. Client sends authorization data to server.
