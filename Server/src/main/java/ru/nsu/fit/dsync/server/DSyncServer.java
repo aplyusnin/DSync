@@ -1,31 +1,18 @@
 package ru.nsu.fit.dsync.server;
 
 import jakarta.servlet.MultipartConfigElement;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import ru.nsu.fit.dsync.server.servlets.*;
 import ru.nsu.fit.dsync.server.sockets.NotifyWebSocket;
 
-
-public class Main {
-
-	public static void main(String[] args) throws Exception {
-
-		DSyncServer server = new DSyncServer(8090);
-
-		try{
-			server.run();
-		}
-		catch (Exception e){
-
-		}
-		/*
-		int port = 8090;//Integer.parseInt(args[0]);
-		Server server = new Server(port);
-
+public class DSyncServer {
+	private Server server;
+	private int port;
+	public DSyncServer(int port){
+		this.port = port;
+		server = new Server(port);
 		ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
 		//handler.addServlet(VersionControlServlet.class, "/INFO");
@@ -36,9 +23,9 @@ public class Main {
 		handler.addServlet(CreateUserServlet.class, "/NEWUSER");
 		handler.addServlet(GetRepoInfoServlet.class, "/REPOINFO");
 		handler.addServlet(RepoSharingServlet.class, "/SHARE");
-		
+
 		/*HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { handler });
+		handlers.setHandlers(new Handler[] { handler });*/
 		server.setHandler(handler);
 		JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, wsContainer) ->
 		{
@@ -48,17 +35,14 @@ public class Main {
 			// Add websockets
 			wsContainer.addMapping("/events/*", NotifyWebSocket.class);
 		});
+	}
 
-		try {
-			server.start();
-			System.out.println("Listening port: " + port);
-			server.join();
+	public void run() throws Exception {
+		server.start();
+		server.join();
+	}
 
-		}
-		catch (Exception e){
-			System.out.println("Error.");
-			e.printStackTrace();
-		}
-*/
+	public void shutdown() throws Exception {
+		server.stop();
 	}
 }
