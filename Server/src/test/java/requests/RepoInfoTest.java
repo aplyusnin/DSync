@@ -26,10 +26,11 @@ public class RepoInfoTest {
 
 		try {
 		//Thread.sleep(100000);
-			URL url = new URL("http://localhost:8090/REPOINFO?login=1&password=12345&owner=1&repo=repo1");
+			URL url = new URL("http://localhost:8090/LOGGED/REPOINFO?login=1&password=12345&owner=1&repo=repo1");
 			HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 
 			connection.setRequestMethod("GET");
+			connection.addRequestProperty("X-test-property", "xuy");
 			/*connection.addRequestProperty("login", "1");
 			connection.addRequestProperty("password", "12345");
 			connection.addRequestProperty("owner", "1");

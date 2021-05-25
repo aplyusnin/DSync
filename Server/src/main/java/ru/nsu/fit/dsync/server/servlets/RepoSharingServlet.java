@@ -23,23 +23,8 @@ public class RepoSharingServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		String login = req.getParameter("login");
-		String password = req.getParameter("password");
-		try {
-			UserMetaData.getInstance().validateUserData(login, password);
-		}
-		catch (InvalidRequestDataException e) {
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
-			return;
-		}
-		catch(Exception e){
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\n"  + e.getStackTrace().toString() + "\n\"}");
-			return;
-		}
+
+		String owner = (String)req.getAttribute("user");
 
 		String repository = req.getParameter("repo");
 		String user = req.getParameter("user");
@@ -54,7 +39,7 @@ public class RepoSharingServlet extends HttpServlet {
 		RepoHandler handler;
 
 		try{
-			handler =  FileManager.getInstance().getHandler(login, repository);
+			handler =  FileManager.getInstance().getHandler(owner, repository);
 		}
 		catch (InvalidRequestDataException e) {
 			resp.setContentType("application/json");

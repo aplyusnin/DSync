@@ -14,7 +14,7 @@ public class TestClient {
 
 
 	public static void run() throws Exception{
-		URI uri = URI.create("ws://localhost:8090/events/");
+		URI uri = URI.create("ws://localhost:8090/LOGGED/events/");
 
 		WebSocketClient client = new WebSocketClient();
 		client.start();

@@ -1,8 +1,10 @@
 package ru.nsu.fit.dsync.server.storage;
 
 import java.io.*;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -15,12 +17,13 @@ import ru.nsu.fit.dsync.utils.Misc;
  */
 public class UserMetaData {
 	private static UserMetaData instance = null;
-	private HashMap<String, HashSet<String>> availableFiles;
+	private HashMap<String, String> tokenToUser;
+
 
 	private String root = "Users";
 
 	private UserMetaData(){
-		availableFiles = new HashMap<>();
+		tokenToUser = new HashMap<>();
 	}
 
 	public static UserMetaData getInstance() {
@@ -50,7 +53,7 @@ public class UserMetaData {
 		return hash;
     }
 
-
+/*
     public HashSet<String> getSharedFiles(String user) throws Exception {
     	if (availableFiles.containsKey(user)) return availableFiles.get(user);
     	var f = findUser(user);
@@ -68,6 +71,7 @@ public class UserMetaData {
         availableFiles.put(user, shared);
 	    return shared;
     }
+    */
 
     public void validateUserData(String user, String password) throws Exception {
 	    byte[] hashServer = getUserPasswordHash(user);
@@ -152,6 +156,26 @@ public class UserMetaData {
 		catch (Exception e) {
 			return;
 		}
+	}
+
+	public String createToken(String user)	{
+    	try {
+		    String time = Long.toString(System.currentTimeMillis());
+		    String token = Base64.getEncoder().encodeToString(
+				    (user + ":" + Misc.bytesToHex(Misc.getSHA256Hash(user + " " + Misc.bytesToHex(Misc.getSHA256Hash(time)) + Double.toString(Math.random() * 1e9)))).getBytes());
+
+		    tokenToUser.put(token, user);
+		    return token;
+	    }
+    	catch (Exception e){return null; }
+	}
+
+	public boolean isTokenExist(String token){
+		return tokenToUser.containsKey(token);
+	}
+
+	public String getUserByToken(String token){
+		return tokenToUser.get(token);
 	}
 
 }

@@ -1,6 +1,5 @@
 package ru.nsu.fit.dsync.server.servlets;
 
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -11,16 +10,15 @@ import ru.nsu.fit.dsync.utils.InvalidRequestDataException;
 
 import java.io.IOException;
 
-@WebServlet("/RepoCreation")
-public class CreateRepoServlet extends HttpServlet {
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-	{
-		String repository = req.getParameter("repo");
-		String user = (String)req.getAttribute("user");
+@WebServlet("/Login")
+public class LoginServlet extends HttpServlet {
 
-		try {
-			UserMetaData.getInstance().createRepo(user, repository);
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		String login = req.getParameter("login");
+		String password = req.getParameter("password");
+		try{
+			UserMetaData.getInstance().validateUserData(login, password);
 		}
 		catch (InvalidRequestDataException e)
 		{
@@ -29,14 +27,14 @@ public class CreateRepoServlet extends HttpServlet {
 			resp.getWriter().println("{ \"error\": \"" + e.getMessage() + "\"}");
 			return;
 		}
-		catch(Exception e){
-			resp.setContentType("application/json");
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.getWriter().println("{ \"error\": \"server error\"}");
+		catch (Exception e)
+		{
+			resp.setStatus(500);
 			return;
 		}
+		String token = UserMetaData.getInstance().createToken(login);
 		resp.setContentType("application/json");
 		resp.setStatus(HttpServletResponse.SC_OK);
-		resp.getWriter().println("{ \"status\": \"success\"}");
+		resp.getWriter().println("{ \"token\": \"" + token + "\"}");
 	}
 }
