@@ -24,6 +24,7 @@ public class UserConnection {
 	private State state;
 	private ObjectMapper mapper = new ObjectMapper();
 
+
 	public UserConnection(NotifyWebSocket socket){
 		this.socket = socket;
 		subscribes = new HashSet<>();
@@ -63,10 +64,14 @@ public class UserConnection {
 			ObjectNode node = mapper.readValue(text, ObjectNode.class);
 			String op = node.get("op").asText();
 			if (!"login".equals(op)) throw new InvalidRequestDataException("Expected login operation");
-			String login = node.get("login").asText();
-			String password = node.get("password").asText();
-			UserMetaData.getInstance().validateUserData(login, password);
-			this.user = login;
+			String token = node.get("token").asText();
+			/*String login = node.get("login").asText();
+			String password = node.get("password").asText();*/
+			if (!UserMetaData.getInstance().isTokenExist(token))
+			{
+				throw  new InvalidRequestDataException("Token is invalid");
+			}
+			user = UserMetaData.getInstance().getUserByToken(token);
 			state = State.IDLE;
 			success();
 		}
@@ -127,7 +132,7 @@ public class UserConnection {
 
 	private void sendMessage(String message){
 		try{
-			System.out.println("Sending: " + message);
+			//System.out.println("Sending: " + message);
 			socket.sendMessage(message);
 		}
 		catch (Exception e){

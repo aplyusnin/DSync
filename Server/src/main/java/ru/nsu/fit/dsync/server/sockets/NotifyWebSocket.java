@@ -32,7 +32,7 @@ public class NotifyWebSocket extends WebSocketAdapter {
 
 	@Override
 	public void onWebSocketText(String message) {
-		System.out.println("Received message: " + message);
+		//System.out.println("Received message: " + message);
 		owner.receiveMessage(message);
 	}
 

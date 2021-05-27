@@ -26,18 +26,10 @@ public class RepoInfoTest {
 
 		try {
 		//Thread.sleep(100000);
-			URL url = new URL("http://localhost:8090/LOGGED/REPOINFO?login=1&password=12345&owner=1&repo=repo1");
-			HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+			URL log = new URL("http://localhost:8090/LOGIN?login=1&password=12345");
+			HttpURLConnection logconnection = (HttpURLConnection)log.openConnection();
 
-			connection.setRequestMethod("GET");
-			connection.addRequestProperty("X-test-property", "xuy");
-			/*connection.addRequestProperty("login", "1");
-			connection.addRequestProperty("password", "12345");
-			connection.addRequestProperty("owner", "1");
-			connection.addRequestProperty("repo", "repo1");*/
-
-
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			BufferedReader in = new BufferedReader(new InputStreamReader(logconnection.getInputStream()));
 			String inputLine;
 			StringBuffer response = new StringBuffer();
 			while((inputLine = in.readLine()) != null)
@@ -47,6 +39,31 @@ public class RepoInfoTest {
 
 			ObjectMapper objectMapper = new ObjectMapper();
 			ObjectNode root = objectMapper.readValue(response.toString(), ObjectNode.class);
+
+			String token = root.get("token").asText();
+
+
+			URL url = new URL("http://localhost:8090/DATA/REPOINFO?owner=1&repo=repo1");
+			HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+
+
+			connection.setRequestMethod("GET");
+			connection.addRequestProperty("X-Access-Token", token);
+			/*connection.addRequestProperty("login", "1");
+			connection.addRequestProperty("password", "12345");
+			connection.addRequestProperty("owner", "1");
+			connection.addRequestProperty("repo", "repo1");*/
+
+
+			in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			inputLine = "";
+			response = new StringBuffer();
+			while((inputLine = in.readLine()) != null)
+			{
+				response.append(inputLine);
+			}
+
+			root = objectMapper.readValue(response.toString(), ObjectNode.class);
 
 			Assert.assertNull(root.get("error"));
 		}

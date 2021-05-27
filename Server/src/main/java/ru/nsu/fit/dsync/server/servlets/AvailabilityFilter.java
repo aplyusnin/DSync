@@ -32,7 +32,7 @@ public class AvailabilityFilter implements Filter {
 			((HttpServletResponse)response).setStatus(400);
 		}
 		if (!UserMetaData.getInstance().hasAccess(user, handler)) {
-			((HttpServletResponse)response).setStatus(401);
+			((HttpServletResponse)response).setStatus(403);
 		}
 		chain.doFilter(request, response);
 	}
