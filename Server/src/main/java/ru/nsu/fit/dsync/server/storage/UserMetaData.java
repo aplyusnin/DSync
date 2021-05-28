@@ -91,6 +91,7 @@ public class UserMetaData {
 	public void createUser(String username, String password) throws Exception {
 		byte[] hash = Misc.getSHA256Hash(password);
 		File file = new File(root + "/" + username);
+		file.mkdirs();
 		File pass = new File(root + "/" + username + "/password.bin");
 		pass.createNewFile();
 		OutputStream out = new FileOutputStream(pass);
