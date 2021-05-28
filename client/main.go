@@ -26,9 +26,6 @@ var configPath = os.Getenv("HOME") + "/.dsync"
 
 var mu sync.Mutex
 
-var Username = "1"
-var Password = "12345"
-
 type eventMsg struct {
 	Event   string `json:"event"`
 	Owner   string `json:"owner"`
@@ -92,24 +89,24 @@ func getFoldersMap(args []string) map[string]string {
 	return m
 }
 
-func mergeFile(folder Folder, filename string, remoteHash string, remoteFolder string, token string) {
+func mergeFile(folder Folder, filename string, remoteHash string, remoteFolder string, token string, username string) {
 
 	if _, err := os.Stat(folder.Path + filename); os.IsNotExist(err) {
-		DownloadFile(filename, remoteFolder, remoteHash, folder.Path, token)
+		DownloadFile(filename, remoteFolder, remoteHash, folder.Path, token, username)
 	} else {
 		localHash := hex.EncodeToString(Hash(folder.Path + filename))
 		//fmt.Println(localHash)
 		if localHash != remoteHash {
-			DownloadFile(filename, remoteFolder, remoteHash, folder.Path, token)
+			DownloadFile(filename, remoteFolder, remoteHash, folder.Path, token, username)
 			//	fmt.Println("Downloaded file: " + folder.Path + message.File)
 		}
 	}
 }
 
-func mergeUploadFile(folder Folder, filename string, remoteHash string, remoteFolder string, token string) {
+func mergeUploadFile(folder Folder, filename string, remoteHash string, remoteFolder string, token string, username string) {
 	localHash := hex.EncodeToString(Hash(filename))
 	if localHash != remoteHash {
-		UploadFile(filename, remoteFolder, token)
+		UploadFile(filename, remoteFolder, token, username)
 	}
 }
 
@@ -136,7 +133,7 @@ func main() {
 		if token == "" {
 			fmt.Println("Incorrect credentials")
 		} else {
-			saveToken(token)
+			saveToken(token, l)
 			fmt.Println("Logged in as " + l)
 		}
 		//println(token)
@@ -158,11 +155,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	token, err := getToken()
+	token, username, err := getToken()
 	if err != nil {
 		fmt.Println("You are not logged in")
 		os.Exit(1)
 	}
+
+	fmt.Println("Logged in as " + username)
 
 	remoteLocalMap := make(map[string][]Folder)
 
@@ -170,6 +169,7 @@ func main() {
 	//println(download)
 
 	m := getFoldersMap(flag.Args())
+
 
 	var structure []Folder
 
@@ -266,7 +266,7 @@ func main() {
 			message := <-receivedLatestResponses
 			if message.Event == "fileUpdate" {
 				for _, folder := range remoteLocalMap[message.Repo] {
-					mergeFile(folder, message.File, message.Version, message.Repo, token)
+					mergeFile(folder, message.File, message.Version, message.Repo, token, username)
 				}
 			}
 		}
@@ -295,7 +295,7 @@ func main() {
 
 		subscription := subscriptionMsg{
 			Op:    "subscribe",
-			Owner: Username,
+			Owner: username,
 			Repo:  folder.RemotePath,
 		}
 
@@ -308,29 +308,29 @@ func main() {
 
 		if *upload {
 			for _, file := range folder.Files {
-				query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: file.Name}
+				query := latestMsg{Op: "latest", Owner: username, Repo: folder.RemotePath, File: file.Name}
 				c.WriteJSON(query)
 				resp := <-receivedEventsMap
-				mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath, token)
+				mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath, token, username)
 			}
 
 			remoteRepoInfo := GetRepoInfo(folder.RemotePath, token, "1")
 
 			for _, fileInfo := range remoteRepoInfo.Files {
-				mergeFile(folder, fileInfo.Filename, fileInfo.Version, folder.RemotePath, token)
+				mergeFile(folder, fileInfo.Filename, fileInfo.Version, folder.RemotePath, token, username)
 			}
 		} else {
 			remoteRepoInfo := GetRepoInfo(folder.RemotePath, token, "1")
 
 			for _, fileInfo := range remoteRepoInfo.Files {
-				mergeFile(folder, fileInfo.Filename, fileInfo.Version, folder.RemotePath, token)
+				mergeFile(folder, fileInfo.Filename, fileInfo.Version, folder.RemotePath, token, username)
 			}
 
 			for _, file := range folder.Files {
-				query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: file.Name}
+				query := latestMsg{Op: "latest", Owner: username, Repo: folder.RemotePath, File: file.Name}
 				c.WriteJSON(query)
 				resp := <-receivedEventsMap
-				mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath, token)
+				mergeUploadFile(folder, folder.Path+file.Name, resp.Version, folder.RemotePath, token, username)
 			}
 		}
 
@@ -352,7 +352,7 @@ func main() {
 				select {
 				case event := <-watcher.Events:
 					//	fmt.Printf("EVENT: %#v\n", event)
-					query := latestMsg{Op: "latest", Owner: Username, Repo: folder.RemotePath, File: strings.Replace(event.Name, folder.Path, "", 1)}
+					query := latestMsg{Op: "latest", Owner: username, Repo: folder.RemotePath, File: strings.Replace(event.Name, folder.Path, "", 1)}
 					err := c.WriteJSON(query)
 					if err != nil {
 						fmt.Println("New error")
@@ -360,7 +360,7 @@ func main() {
 					}
 
 					resp := <-receivedEventsMap
-					mergeUploadFile(folder, event.Name, resp.Version, folder.RemotePath, token)
+					mergeUploadFile(folder, event.Name, resp.Version, folder.RemotePath, token, username)
 
 					watcher.Add(event.Name)
 
@@ -437,7 +437,7 @@ func touch() {
 	}
 }
 */
-func getToken() (string, error) {
+func getToken() (string, string, error) {
 	touch()
 
 	b, err := ioutil.ReadFile(configPath + "/.config.json")
@@ -450,16 +450,17 @@ func getToken() (string, error) {
 		print(err)
 	}
 	if res.Token == "" {
-		return "", errors.New("No saved token")
+		return "", "", errors.New("No saved token")
 	}
-	return res.Token, nil
+	return res.Token, res.Username, nil
 }
 
 type TokenFile struct {
 	Token string `json:"token"`
+	Username string `json:"username"`
 }
 
-func saveToken(token string) {
+func saveToken(token string, username string) {
 	touch()
 	f, err := os.Create(configPath + "/.config.json")
 	if err != nil {
@@ -469,13 +470,13 @@ func saveToken(token string) {
 
 	var st = TokenFile{
 		Token: token,
+		Username: username,
 	}
-
-	fmt.Println(token)
 
 	out, _ := json.Marshal(st)
 	f.Write(out)
 
 	f.Close()
 }
+
 

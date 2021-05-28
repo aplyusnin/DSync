@@ -41,7 +41,7 @@ type CreateUserInfo struct {
 	Error string `json:"error"`
 }
 
-func UploadFile(filename string, remoteDirectory string, token string) {
+func UploadFile(filename string, remoteDirectory string, token string, username string) {
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Println(err)
@@ -80,7 +80,7 @@ func UploadFile(filename string, remoteDirectory string, token string) {
 	//q.Add("password", Password)
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", fi.Name())
-	q.Add("owner", Username)
+	q.Add("owner", username)
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add("Content-Type", writer.FormDataContentType())
@@ -98,13 +98,13 @@ func UploadFile(filename string, remoteDirectory string, token string) {
 	}
 }
 
-func UploadDirectory(folder Folder, token string) {
+func UploadDirectory(folder Folder, token string, username string) {
 	for _, file := range folder.Files {
-		UploadFile(folder.Path+file.Name, folder.RemotePath, token)
+		UploadFile(folder.Path+file.Name, folder.RemotePath, token, username)
 	}
 }
 
-func DownloadFile(filename string, remoteDirectory string, version string, localDirectory string, token string) {
+func DownloadFile(filename string, remoteDirectory string, version string, localDirectory string, token string, username string) {
 	req, err := http.NewRequest("GET", url+downloadUri, nil)
 	if err != nil {
 		log.Println(err)
@@ -120,7 +120,7 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", filename)
 	q.Add("version", version)
-	q.Add("owner", "1")
+	q.Add("owner", username)
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
@@ -143,7 +143,7 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	fmt.Println("File downloaded: " + localDirectory + filename)
 }
 
-func GetRepoInfo(repoName string, token string, owner string) RemoteRepoInfo {
+func GetRepoInfo(repoName string, token string, username string) RemoteRepoInfo {
 	req, err := http.NewRequest("GET", url+repoInfoUri, nil)
 	if err != nil {
 		log.Println(err)
@@ -157,7 +157,7 @@ func GetRepoInfo(repoName string, token string, owner string) RemoteRepoInfo {
 //	q.Add("login", "1")
 //	q.Add("password", "12345")
 	q.Add("repo", repoName)
-	q.Add("owner", "1")
+	q.Add("owner", username)
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
