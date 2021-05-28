@@ -125,6 +125,7 @@ func main() {
 	download := flag.Bool("d", false, "Download remote version upon start")
 	login := flag.Bool("l", false, "Log in")
 	register := flag.Bool("r", false, "Register a new user")
+	create := flag.Bool("c", false, "Create a new repo")
 	flag.Parse()
 
 	if *login {
@@ -141,8 +142,12 @@ func main() {
 	}
 	if *register {
 		l, p := credentials()
-		println(l)
-		println(p)
+		err := CreateUser(l, p)
+		if err == nil {
+			fmt.Println("User created successfully")
+		} else {
+			fmt.Println("Error: ", err)
+		}
 		os.Exit(0)
 	}
 	if *upload && *download {
@@ -150,7 +155,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !*upload && !*download {
+	if !*upload && !*download && !*create {
 		fmt.Println("No upload or download flag specified")
 		os.Exit(1)
 	}
@@ -162,6 +167,16 @@ func main() {
 	}
 
 	fmt.Println("Logged in as " + username)
+
+	if *create {
+		err := CreateRepo(flag.Args()[0], token)
+		if err == nil {
+			fmt.Println("Remote directory created successfully")
+		} else {
+			fmt.Println("Error: ", err)
+		}
+		os.Exit(0)
+	}
 
 	remoteLocalMap := make(map[string][]Folder)
 

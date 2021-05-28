@@ -41,6 +41,11 @@ type CreateUserInfo struct {
 	Error string `json:"error"`
 }
 
+type CreateRepoInfo struct {
+	Status string `json:"status"`
+	Error string `json:"error"`
+}
+
 func UploadFile(filename string, remoteDirectory string, token string, username string) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -232,3 +237,31 @@ func CreateUser(login string, password string) error {
 	// todo something
 }
 
+func CreateRepo(repo string, token string) error {
+
+
+	req, err := http.NewRequest("GET", url + newRepoUrl, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set(tokenHeaderName, token)
+
+	client := &http.Client{}
+
+	q := req.URL.Query()
+	q.Add("repo", repo)
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	info := CreateRepoInfo{}
+	if info.Error != "" {
+		return errors.New(info.Error)
+	}
+
+	return nil
+}
