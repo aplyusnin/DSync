@@ -1,22 +1,22 @@
 package main
 
 import (
-	"errors"
-	"encoding/json"
 	"bufio"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -24,14 +24,14 @@ var websocketUri = "ws://localhost:8090/events/"
 
 var configPath = os.Getenv("HOME") + "/.dsync"
 
-var mu sync.Mutex
-
-type eventMsg struct {
-	Event   string `json:"event"`
-	Owner   string `json:"owner"`
-	Repo    string `json:"repo"`
-	File    string `json:"file"`
-	Version string `json:"version"`
+type File struct {
+	Name string
+	Hash string
+}
+type Folder struct {
+	Path       string
+	Files      []File
+	RemotePath string
 }
 
 type latestMsg struct {
@@ -48,8 +48,8 @@ type subscriptionMsg struct {
 }
 
 type loginMsg struct {
-	Op       string `json:"op"`
-	Token    string `json:"token"`
+	Op    string `json:"op"`
+	Token string `json:"token"`
 }
 
 type loginResponse struct {
@@ -90,15 +90,12 @@ func getFoldersMap(args []string) map[string]string {
 }
 
 func mergeFile(folder Folder, filename string, remoteHash string, remoteFolder string, token string, username string) {
-
 	if _, err := os.Stat(folder.Path + filename); os.IsNotExist(err) {
 		DownloadFile(filename, remoteFolder, remoteHash, folder.Path, token, username)
 	} else {
 		localHash := hex.EncodeToString(Hash(folder.Path + filename))
-		//fmt.Println(localHash)
 		if localHash != remoteHash {
 			DownloadFile(filename, remoteFolder, remoteHash, folder.Path, token, username)
-			//	fmt.Println("Downloaded file: " + folder.Path + message.File)
 		}
 	}
 }
@@ -120,6 +117,72 @@ func credentials() (string, string) {
 	return strings.TrimSuffix(login, "\n"), string(bytePassword)
 }
 
+func createConfigIfNotExists() {
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		err := os.MkdirAll(configPath, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	_, err := os.Stat(configPath + "/.config.json")
+	if os.IsNotExist(err) {
+		file, err := os.Create(configPath + "/.config.json")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var emptyStruct = TokenFile{
+			Token: "",
+		}
+		out, _ := json.Marshal(emptyStruct)
+		file.Write(out)
+		file.Close()
+	}
+
+}
+
+func getToken() (string, string, error) {
+	createConfigIfNotExists()
+
+	b, err := ioutil.ReadFile(configPath + "/.config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var res = TokenFile{}
+	err = json.Unmarshal(b, &res)
+	if err != nil {
+		print(err)
+	}
+	if res.Token == "" {
+		return "", "", errors.New("no saved token")
+	}
+	return res.Token, res.Username, nil
+}
+
+type TokenFile struct {
+	Token    string `json:"token"`
+	Username string `json:"username"`
+}
+
+func saveToken(token string, username string) {
+	createConfigIfNotExists()
+	f, err := os.Create(configPath + "/.config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	var st = TokenFile{
+		Token:    token,
+		Username: username,
+	}
+
+	out, _ := json.Marshal(st)
+	f.Write(out)
+
+	f.Close()
+}
+
 func main() {
 	upload := flag.Bool("u", false, "Upload local version upon start")
 	download := flag.Bool("d", false, "Download remote version upon start")
@@ -137,7 +200,6 @@ func main() {
 			saveToken(token, l)
 			fmt.Println("Logged in as " + l)
 		}
-		//println(token)
 		os.Exit(0)
 	}
 	if *register {
@@ -180,69 +242,29 @@ func main() {
 
 	remoteLocalMap := make(map[string][]Folder)
 
-	//println(upload)
-	//println(download)
-
 	m := getFoldersMap(flag.Args())
-
 
 	var structure []Folder
 
 	for k, v := range m {
-		flag := false
-
-		for _, str := range structure {
-			if str.Path == k {
-				flag = true
-				if str.RemotePath != v {
-					str.RemotePath = v
-				}
-
-				files, err := ioutil.ReadDir(k)
-				if err != nil {
-					panic("Cannot open directory: " + k)
-				}
-				for _, file := range files {
-					if file.IsDir() {
-						// nested directory, todo make a function for that
-					} else {
-						flag1 := false
-						for _, fileDescription := range str.Files {
-							if fileDescription.Name == file.Name() {
-								flag1 = true
-							}
-						}
-
-						if !flag1 {
-							str.Files = append(str.Files, File{Name: file.Name(), Hash: hex.EncodeToString(Hash(file.Name()))})
-						}
-					}
-				}
+		newfolder := Folder{Path: k, RemotePath: v, Files: []File{}}
+		files, err := ioutil.ReadDir(k)
+		if err != nil {
+			panic("Cannot open directory: " + k)
+		}
+		for _, file := range files {
+			if file.IsDir() {
+				// ignore
+			} else {
+				newfolder.Files = append(newfolder.Files, File{Name: file.Name(), Hash: hex.EncodeToString(Hash(k + file.Name()))})
 			}
 		}
-
-		if !flag {
-			newfolder := Folder{Path: k, RemotePath: v, Files: []File{}}
-			files, err := ioutil.ReadDir(k)
-			if err != nil {
-				panic("Cannot open directory: " + k)
-			}
-			for _, file := range files {
-				if file.IsDir() {
-					// nested directory, todo make a function for that
-				} else {
-					newfolder.Files = append(newfolder.Files, File{Name: file.Name(), Hash: hex.EncodeToString(Hash(k + file.Name()))})
-				}
-			}
-			structure = append(structure, newfolder)
-		}
+		structure = append(structure, newfolder)
 	}
 
 	for _, folder := range structure {
 		remoteLocalMap[folder.RemotePath] = append(remoteLocalMap[folder.RemotePath], folder)
 	}
-
-	//fmt.Println(remoteLocalMap)
 
 	done := make(chan bool)
 	sigs := make(chan os.Signal, 1)
@@ -258,10 +280,9 @@ func main() {
 	}
 	defer c.Close()
 
-
 	err = c.WriteJSON(loginMsg{
-		Op:       "login",
-		Token:    token,
+		Op:    "login",
+		Token: token,
 	})
 	if err != nil {
 		log.Fatal("Error during login: ", err)
@@ -350,8 +371,6 @@ func main() {
 		}
 
 		go func() { // upload
-			ticker := time.NewTicker(15 * time.Second)
-			defer ticker.Stop()
 
 			watcher, err := fsnotify.NewWatcher()
 			if err != nil {
@@ -360,13 +379,12 @@ func main() {
 			defer watcher.Close()
 			for _, f := range folder.Files {
 				if error := watcher.Add(folder.Path + f.Name); err != nil {
-					fmt.Println("ERROR", error)
+					fmt.Println("ERROR ", error)
 				}
 			}
 			for {
 				select {
 				case event := <-watcher.Events:
-					//	fmt.Printf("EVENT: %#v\n", event)
 					query := latestMsg{Op: "latest", Owner: username, Repo: folder.RemotePath, File: strings.Replace(event.Name, folder.Path, "", 1)}
 					err := c.WriteJSON(query)
 					if err != nil {
@@ -380,10 +398,7 @@ func main() {
 					watcher.Add(event.Name)
 
 				case err := <-watcher.Errors:
-					fmt.Println("ERROR", err)
-
-				case <-ticker.C:
-					//	fmt.Println("TICK")
+					fmt.Println("ERROR ", err)
 				}
 			}
 		}()
@@ -402,96 +417,3 @@ func main() {
 		<-done
 	}
 }
-
-func touch() {
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		err := os.MkdirAll(configPath, os.ModePerm)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	_, err := os.Stat(configPath + "/.config.json")
-	if os.IsNotExist(err) {
-		file, err := os.Create(configPath + "/.config.json")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-
-		var emptyStruct = TokenFile{
-			Token: "",
-		}
-		out, _ := json.Marshal(emptyStruct)
-		file.Write(out)
-		file.Close()
-	}
-
-}
-
-
-/*func touch() {
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		err := os.MkdirAll(configPath, os.ModePerm)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	_, err := os.Stat(os.Getenv("HOME") + "/.dsync/config.json")
-	if os.IsNotExist(err) {
-		file, err := os.Create(os.Getenv("HOME") + "/.dsync/config.json")
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		out := Marshal([]Folder{})
-
-		file.Write(out)
-		file.Close()
-	}
-}
-*/
-func getToken() (string, string, error) {
-	touch()
-
-	b, err := ioutil.ReadFile(configPath + "/.config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var res = TokenFile{}
-	err = json.Unmarshal(b, &res)
-	if err != nil {
-		print(err)
-	}
-	if res.Token == "" {
-		return "", "", errors.New("No saved token")
-	}
-	return res.Token, res.Username, nil
-}
-
-type TokenFile struct {
-	Token string `json:"token"`
-	Username string `json:"username"`
-}
-
-func saveToken(token string, username string) {
-	touch()
-	f, err := os.Create(configPath + "/.config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	var st = TokenFile{
-		Token: token,
-		Username: username,
-	}
-
-	out, _ := json.Marshal(st)
-	f.Write(out)
-
-	f.Close()
-}
-
-

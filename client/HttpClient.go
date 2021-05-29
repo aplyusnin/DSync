@@ -1,9 +1,9 @@
 package main
 
 import (
-	"errors"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -19,7 +19,6 @@ var repoInfoUri = "/DATA/REPOINFO"
 var newRepoUrl = "/DATA/NEWREPO"
 var loginUrl = "/LOGIN"
 var newUserUrl = "/NEWUSER"
-var websocketAddress = ""
 var tokenHeaderName = "X-Access-Token"
 
 type TokenInfo struct {
@@ -38,12 +37,12 @@ type RemoteFileInfo struct {
 
 type CreateUserInfo struct {
 	Status string `json:"status"`
-	Error string `json:"error"`
+	Error  string `json:"error"`
 }
 
 type CreateRepoInfo struct {
 	Status string `json:"status"`
-	Error string `json:"error"`
+	Error  string `json:"error"`
 }
 
 func UploadFile(filename string, remoteDirectory string, token string, username string) {
@@ -81,8 +80,6 @@ func UploadFile(filename string, remoteDirectory string, token string, username 
 	request.Header.Set(tokenHeaderName, token)
 
 	q := request.URL.Query()
-	//q.Add("login", Username)
-	//q.Add("password", Password)
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", fi.Name())
 	q.Add("owner", username)
@@ -120,8 +117,6 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	req.Header.Set(tokenHeaderName, token)
 
 	q := req.URL.Query()
-//	q.Add("login", "1")
-//	q.Add("password", "12345")
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", filename)
 	q.Add("version", version)
@@ -155,12 +150,9 @@ func GetRepoInfo(repoName string, token string, username string) RemoteRepoInfo 
 	}
 	req.Header.Set(tokenHeaderName, token)
 
-
 	client := &http.Client{}
 
 	q := req.URL.Query()
-//	q.Add("login", "1")
-//	q.Add("password", "12345")
 	q.Add("repo", repoName)
 	q.Add("owner", username)
 	req.URL.RawQuery = q.Encode()
@@ -174,12 +166,11 @@ func GetRepoInfo(repoName string, token string, username string) RemoteRepoInfo 
 	info := RemoteRepoInfo{}
 
 	json.NewDecoder(res.Body).Decode(&info)
-
 	return info
 }
 
 func GetToken(login string, password string) string {
-	req, err := http.NewRequest("GET", url + loginUrl, nil)
+	req, err := http.NewRequest("GET", url+loginUrl, nil)
 	if err != nil {
 		log.Println(err)
 	}
@@ -201,15 +192,10 @@ func GetToken(login string, password string) string {
 
 	json.NewDecoder(res.Body).Decode(&info)
 	return info.Token
-//	if info.Token != nil {
-//		return info.Token
-//	} else {
-//		return nil
-//	}
 }
 
 func CreateUser(login string, password string) error {
-	req, err := http.NewRequest("GET", url + newUserUrl, nil)
+	req, err := http.NewRequest("GET", url+newUserUrl, nil)
 	if err != nil {
 		log.Println(err)
 	}
@@ -234,13 +220,10 @@ func CreateUser(login string, password string) error {
 		return errors.New(info.Error)
 	}
 	return nil
-	// todo something
 }
 
 func CreateRepo(repo string, token string) error {
-
-
-	req, err := http.NewRequest("GET", url + newRepoUrl, nil)
+	req, err := http.NewRequest("GET", url+newRepoUrl, nil)
 	if err != nil {
 		return err
 	}
