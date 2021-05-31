@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,10 +13,18 @@ import (
 )
 
 var url = "http://localhost:8090"
-var uploadUri = "/UPLOAD"
-var downloadUri = "/DOWNLOAD"
-var repoInfoUri = "/REPOINFO"
-var websocketAddress = ""
+var uploadUri = "/DATA/UPLOAD"
+var downloadUri = "/DATA/DOWNLOAD"
+var repoInfoUri = "/DATA/REPOINFO"
+var newRepoUrl = "/DATA/NEWREPO"
+var loginUrl = "/LOGIN"
+var newUserUrl = "/NEWUSER"
+var tokenHeaderName = "X-Access-Token"
+
+type TokenInfo struct {
+	Error string `json:"error"`
+	Token string `json:"token"`
+}
 
 type RemoteRepoInfo struct {
 	Files []RemoteFileInfo `json:"files"`
@@ -26,7 +35,17 @@ type RemoteFileInfo struct {
 	Version  string `json:"version"`
 }
 
-func UploadFile(filename string, remoteDirectory string) {
+type CreateUserInfo struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
+type CreateRepoInfo struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
+func UploadFile(filename string, remoteDirectory string, token string, username string) {
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Println(err)
@@ -58,12 +77,12 @@ func UploadFile(filename string, remoteDirectory string) {
 		fmt.Println(err)
 	}
 
+	request.Header.Set(tokenHeaderName, token)
+
 	q := request.URL.Query()
-	q.Add("login", Username)
-	q.Add("password", Password)
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", fi.Name())
-	q.Add("owner", Username)
+	q.Add("owner", username)
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add("Content-Type", writer.FormDataContentType())
@@ -81,13 +100,13 @@ func UploadFile(filename string, remoteDirectory string) {
 	}
 }
 
-func UploadDirectory(folder Folder) {
+func UploadDirectory(folder Folder, token string, username string) {
 	for _, file := range folder.Files {
-		UploadFile(folder.Path+file.Name, folder.RemotePath)
+		UploadFile(folder.Path+file.Name, folder.RemotePath, token, username)
 	}
 }
 
-func DownloadFile(filename string, remoteDirectory string, version string, localDirectory string) {
+func DownloadFile(filename string, remoteDirectory string, version string, localDirectory string, token string, username string) {
 	req, err := http.NewRequest("GET", url+downloadUri, nil)
 	if err != nil {
 		log.Println(err)
@@ -95,13 +114,13 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 
 	client := &http.Client{}
 
+	req.Header.Set(tokenHeaderName, token)
+
 	q := req.URL.Query()
-	q.Add("login", "1")
-	q.Add("password", "12345")
 	q.Add("repo", remoteDirectory)
 	q.Add("filename", filename)
 	q.Add("version", version)
-	q.Add("owner", "1")
+	q.Add("owner", username)
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
@@ -124,19 +143,18 @@ func DownloadFile(filename string, remoteDirectory string, version string, local
 	fmt.Println("File downloaded: " + localDirectory + filename)
 }
 
-func GetRepoInfo(repoName string) RemoteRepoInfo {
+func GetRepoInfo(repoName string, token string, username string) RemoteRepoInfo {
 	req, err := http.NewRequest("GET", url+repoInfoUri, nil)
 	if err != nil {
 		log.Println(err)
 	}
+	req.Header.Set(tokenHeaderName, token)
 
 	client := &http.Client{}
 
 	q := req.URL.Query()
-	q.Add("login", "1")
-	q.Add("password", "12345")
 	q.Add("repo", repoName)
-	q.Add("owner", "1")
+	q.Add("owner", username)
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
@@ -148,6 +166,85 @@ func GetRepoInfo(repoName string) RemoteRepoInfo {
 	info := RemoteRepoInfo{}
 
 	json.NewDecoder(res.Body).Decode(&info)
-
 	return info
+}
+
+func GetToken(login string, password string) string {
+	req, err := http.NewRequest("GET", url+loginUrl, nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	client := &http.Client{}
+
+	q := req.URL.Query()
+	q.Add("login", login)
+	q.Add("password", password)
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+	defer res.Body.Close()
+
+	info := TokenInfo{}
+
+	json.NewDecoder(res.Body).Decode(&info)
+	return info.Token
+}
+
+func CreateUser(login string, password string) error {
+	req, err := http.NewRequest("GET", url+newUserUrl, nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	client := &http.Client{}
+
+	q := req.URL.Query()
+	q.Add("login", login)
+	q.Add("password", password)
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+	defer res.Body.Close()
+
+	info := CreateUserInfo{}
+
+	json.NewDecoder(res.Body).Decode(&info)
+	if info.Error != "" {
+		return errors.New(info.Error)
+	}
+	return nil
+}
+
+func CreateRepo(repo string, token string) error {
+	req, err := http.NewRequest("GET", url+newRepoUrl, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set(tokenHeaderName, token)
+
+	client := &http.Client{}
+
+	q := req.URL.Query()
+	q.Add("repo", repo)
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	info := CreateRepoInfo{}
+	if info.Error != "" {
+		return errors.New(info.Error)
+	}
+
+	return nil
 }

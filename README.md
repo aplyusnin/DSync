@@ -14,6 +14,20 @@ cd Server
 gradle run
 ```
 
+Log in as an existing user:
+```
+./client/dsync -l
+```
+After that, enter login and password. If the credentials are correct, the authentication token will be stored in `${HOME}/.dsync` directory.
+
+Create a new user:
+```
+./client/dsync -c
+```
+After that, enter login and password of the new user.
+
+All following operations require the client to be authenticated.
+
 Synchronize a directory with remote directory `repo1`, overwriting the changes on server:
 ```
 ./client/dsync -u /local/directory/name/:repo1

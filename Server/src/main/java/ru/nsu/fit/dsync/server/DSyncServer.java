@@ -8,7 +8,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import ru.nsu.fit.dsync.server.servlets.*;
 import ru.nsu.fit.dsync.server.sockets.NotifyWebSocket;
-
+import java.time.Duration;
 import java.util.EnumSet;
 
 public class DSyncServer {
@@ -47,6 +47,8 @@ public class DSyncServer {
 		{
 			// Configure default max size
 			wsContainer.setMaxTextMessageSize(65535);
+
+			wsContainer.setIdleTimeout(Duration.ofDays(10));
 
 			// Add websockets
 			wsContainer.addMapping("/events/*", NotifyWebSocket.class);
