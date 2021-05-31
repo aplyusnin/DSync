@@ -15,18 +15,18 @@ public class AuthenticationFilter implements Filter {
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
 	{
 		HttpServletRequest req = (HttpServletRequest)request;
-		//String token = req.getParameter("X-Access-Token");
 		String token = req.getHeader("X-Access-Token");
 		if (token == null){
 			((HttpServletResponse)response).setStatus(401);
+			return;
 		}
 		else {
 
 			if (!UserMetaData.getInstance().isTokenExist(token))
 			{
 				((HttpServletResponse)response).setStatus(401);
+				return;
 			}
-
 			String user = UserMetaData.getInstance().getUserByToken(token);
 			req.setAttribute("user", user);
 			chain.doFilter(request, response);

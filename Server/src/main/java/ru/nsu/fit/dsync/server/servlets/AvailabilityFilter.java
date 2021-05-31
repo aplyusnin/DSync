@@ -18,10 +18,11 @@ public class AvailabilityFilter implements Filter {
 
 		String repo = req.getParameter("repo");
 		String owner = req.getParameter("owner");
-
+		System.out.println("Yep cock! " + owner + " " + repo);
 		if (repo == null || owner == null) {
 
 			((HttpServletResponse)response).setStatus(400);
+			return;
 		}
 
 		RepoHandler handler = null;
@@ -30,9 +31,11 @@ public class AvailabilityFilter implements Filter {
 		}
 		catch (Exception e) {
 			((HttpServletResponse)response).setStatus(400);
+			return;
 		}
 		if (!UserMetaData.getInstance().hasAccess(user, handler)) {
 			((HttpServletResponse)response).setStatus(403);
+			return;
 		}
 		chain.doFilter(request, response);
 	}

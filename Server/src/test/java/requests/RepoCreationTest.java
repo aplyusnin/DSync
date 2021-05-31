@@ -3,6 +3,7 @@ package requests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import ru.nsu.fit.dsync.server.DSyncServer;
 
@@ -11,8 +12,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class RepoInfoTest {
+public class RepoCreationTest {
 	@Test
+	@Ignore
 	public void test(){
 		DSyncServer server = new DSyncServer(8090);
 
@@ -25,7 +27,7 @@ public class RepoInfoTest {
 		t.start();
 
 		try {
-		//Thread.sleep(100000);
+			//Thread.sleep(100000);
 			URL log = new URL("http://localhost:8090/LOGIN?login=1&password=12345");
 			HttpURLConnection logconnection = (HttpURLConnection)log.openConnection();
 
@@ -43,16 +45,16 @@ public class RepoInfoTest {
 			String token = root.get("token").asText();
 
 
-			URL url = new URL("http://localhost:8090/DATA/ACCESS/REPOINFO?owner=1&repo=repo1");
+			URL url = new URL("http://localhost:8090/DATA/NEWREPO?repo=testrepo");
 			HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 
 
 			connection.setRequestMethod("GET");
 			connection.addRequestProperty("X-Access-Token", token);
-			/*connection.addRequestProperty("login", "1");
-			connection.addRequestProperty("password", "12345");
-			connection.addRequestProperty("owner", "1");
-			connection.addRequestProperty("repo", "repo1");*/
+				/*connection.addRequestProperty("login", "1");
+				connection.addRequestProperty("password", "12345");
+				connection.addRequestProperty("owner", "1");
+				connection.addRequestProperty("repo", "repo1");*/
 
 
 			in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
