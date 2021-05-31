@@ -16,7 +16,7 @@ public class RepoCreationTest {
 	@Test
 	@Ignore
 	public void test(){
-		DSyncServer server = new DSyncServer(8090);
+		DSyncServer server = DSyncServer.create();
 
 		var t = new Thread(() -> {
 			try{

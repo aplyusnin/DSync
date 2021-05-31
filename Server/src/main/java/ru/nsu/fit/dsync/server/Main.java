@@ -1,26 +1,16 @@
 package ru.nsu.fit.dsync.server;
 
-import jakarta.servlet.MultipartConfigElement;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import ru.nsu.fit.dsync.server.servlets.*;
-import ru.nsu.fit.dsync.server.sockets.NotifyWebSocket;
-
-
 public class Main {
 
 	public static void main(String[] args) throws Exception {
 
-		DSyncServer server = new DSyncServer(8090);
+		DSyncServer server = DSyncServer.create();
 
 		try{
 			server.run();
 		}
 		catch (Exception e){
-
+			System.out.println(e.getMessage());
 		}
 		/*
 		int port = 8090;//Integer.parseInt(args[0]);

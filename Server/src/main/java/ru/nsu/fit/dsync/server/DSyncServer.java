@@ -6,8 +6,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.ini4j.Wini;
 import ru.nsu.fit.dsync.server.servlets.*;
 import ru.nsu.fit.dsync.server.sockets.NotifyWebSocket;
+
+import java.io.File;
 import java.time.Duration;
 import java.util.EnumSet;
 
@@ -22,10 +25,37 @@ public class DSyncServer {
 		connector.setHost("127.0.0.1");
 	}*/
 
+	public void configure()
+	{
 
-	public DSyncServer(int port){
-		this.port = port;
-		server = new Server(port);
+		String config = "./config.ini";
+		String address  = "localhost";
+		int port = 8090;
+		try
+		{
+			Wini ini = new Wini(new File(config));
+			address = ini.get("serverInfo", "address", String.class);
+			port = ini.get("serverInfo", "port", int.class);
+		}
+		catch (Exception e)
+		{
+			address = "localhost";
+			port = 8090;
+		}
+		ServerConnector connector = new ServerConnector(server);
+		connector.setHost(address);
+		connector.setPort(port);
+		server.addConnector(connector);
+	}
+
+
+	public DSyncServer(){
+		server = new Server();
+
+	}
+
+	public void setServices()
+	{
 		ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
 
@@ -54,6 +84,16 @@ public class DSyncServer {
 			wsContainer.addMapping("/events/*", NotifyWebSocket.class);
 		});
 	}
+
+
+	public static DSyncServer create()
+	{
+		DSyncServer server = new DSyncServer();
+		server.configure();
+		server.setServices();
+		return server;
+	}
+
 
 	public void run() throws Exception {
 		server.start();

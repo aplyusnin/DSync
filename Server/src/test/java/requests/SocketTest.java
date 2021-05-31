@@ -15,7 +15,7 @@ import java.net.URL;
 public class SocketTest {
 	@Test
 	public void test(){
-		DSyncServer server = new DSyncServer(8090);
+		DSyncServer server = DSyncServer.create();
 
 		var t = new Thread(() -> {
 			try{
