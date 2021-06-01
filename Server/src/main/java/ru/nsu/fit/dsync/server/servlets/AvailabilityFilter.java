@@ -18,7 +18,6 @@ public class AvailabilityFilter implements Filter {
 
 		String repo = req.getParameter("repo");
 		String owner = req.getParameter("owner");
-		System.out.println("Yep cock! " + owner + " " + repo);
 		if (repo == null || owner == null) {
 
 			((HttpServletResponse)response).setStatus(400);
