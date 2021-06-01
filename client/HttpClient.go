@@ -13,9 +13,9 @@ import (
 )
 
 var url = "http://localhost:8090"
-var uploadUri = "/DATA/UPLOAD"
-var downloadUri = "/DATA/DOWNLOAD"
-var repoInfoUri = "/DATA/REPOINFO"
+var uploadUri = "/DATA/ACCESS/UPLOAD"
+var downloadUri = "/DATA/ACCESS/DOWNLOAD"
+var repoInfoUri = "/DATA/ACCESS/REPOINFO"
 var newRepoUrl = "/DATA/NEWREPO"
 var loginUrl = "/LOGIN"
 var newUserUrl = "/NEWUSER"
